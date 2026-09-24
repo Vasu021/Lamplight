@@ -8,7 +8,11 @@ The entire app is `index.html` — markup, CSS and JavaScript in one document, s
 
 Keep it that way. The single file *is* the feature: a user can download one `index.html`, open it from disk with no toolchain, and read a PDF. Splitting out `app.js` and `styles.css` would cost that and buy very little at this size. If the file ever grows past the point of comfort, say so and discuss before restructuring.
 
-The corollary is that there is no state outside the tab. Open documents are `File` objects held in memory; they cannot be persisted and are gone on reload. Only theme and zoom go to `localStorage`.
+State lives in three places, and the split matters:
+
+- **In memory** — `docs`, the documents loaded right now, with their pdf.js instances and rendered canvases. Gone on reload.
+- **`localStorage`** — theme and zoom. Two small strings.
+- **IndexedDB** — the shelf: the PDF bytes and your place in each document, so they survive closing the tab.
 
 ## The document model
 
@@ -24,6 +28,25 @@ Each entry of `doc.pages` is `{ page, el, gen }`. `gen` is the render generation
 
 **The order of operations matters when opening.** `baseScale` measures `#shelf`, not the document section, precisely so a hidden document still sizes correctly — but `#shelf` itself is `display: none` until `body.reading` is set. So `body.reading` must go on *before* the first `layoutDoc`, which is why `openFiles` sets it before calling `switchTo`.
 
+## The shelf (IndexedDB)
+
+Documents you open are kept on the device so they come back next visit. Two object stores, deliberately:
+
+| Store | Holds | Written |
+| :--- | :--- | :--- |
+| `files` | `{ id, blob, fileName }` — the PDF bytes | once, when a document is first opened |
+| `meta` | `{ id, name, fileName, size, pages, page, openedAt }` | every time you open one, and as you scroll |
+
+They are separate **so that remembering a page number never rewrites the blob**. Put them in one store and every scroll pause rewrites forty megabytes. The id is `name::size`, the same identity the duplicate check uses.
+
+Rules worth keeping:
+
+- **Every call is non-fatal.** Private browsing, a denied quota, a blocked upgrade — all of it degrades to "the shelf stays empty and reading still works". `remember()` warns once per session, never per file.
+- **`rememberPage` reads the page synchronously**, before its `await`. It used to compute `currentPage()` inside the async write, which meant switching documents saved the *new* document's position onto the old one's record.
+- **Nothing is opened automatically on load.** The shelf is a list to choose from; auto-restoring several large PDFs would make the first paint cost seconds for something the reader may not want.
+- **Progress is `(page - 1) / (pages - 1)`**, so page 1 reads as 0% rather than `1/pages`.
+- `refreshShelf()` reloads the cached `shelved` array and redraws both the landing list and the switcher menu. Call it after anything that adds, removes or reopens.
+
 ## The parts that matter
 
 All the JavaScript lives in one IIFE at the bottom of `index.html`.
@@ -34,6 +57,8 @@ All the JavaScript lives in one IIFE at the bottom of `index.html`.
 - **`invalidate()`** — theme, zoom or width changed, so every page of every document is now stale. Bumps `generation`, clears every `laidOut` flag, and re-lays out only the active document; the others are re-laid out lazily by `switchTo` when you next look at them.
 - **`openFiles(list)`** — the entry point for both the picker and drag-and-drop, taking any number of files. Opens each in turn, collects failures rather than aborting on the first, switches to the first success, and reports what went wrong. **`openOne` is where all the user-facing error strings live.**
 - **`updatePageLabel(force)` / `goToPage(n)`** — the page counter is an `<input>`, not a label. `updatePageLabel` refuses to overwrite the field while it has focus unless `force` is set, so scrolling never fights what the reader is typing; `force` is used after a jump, where the field must correct itself to the clamped page. `goToPage` clamps to `1…pages.length` and scrolls the page element into view.
+- **`goHome()`** — drops `body.reading` so the landing page shows again, *without* unloading anything: it saves the active document's `scrollY` and page first, so returning through the shelf is instant and lands where you left. It hangs off **Your shelf** at the foot of the switcher menu, which is the only way back while reading.
+- **`openFromShelf(id)`** — pulls the blob back out of IndexedDB, rebuilds a `File` from it and hands it to `openFiles`, which resumes at the saved page via `doc.pendingPage`.
 - **`switchTo(id)` / `closeDoc(id)`** — saving and restoring `scrollY` on the way out and in. `closeDoc` destroys the pdf.js document, disconnects the observer, and falls back to a neighbour; closing the last one returns to the welcome screen.
 - **`generation`** — a counter bumped by `invalidate()`. `renderPage` captures it at the start and bails out after each `await` if it no longer matches. This is what cancels stale renders when the user zooms or switches theme mid-render. **Any new `await` inside a render path needs a `if (gen !== generation) return;` after it**, or you will get pages painted in the previous theme. It is deliberately global rather than per-document: a theme change invalidates everything at once.
 
@@ -100,6 +125,11 @@ There is no test suite; it is manual, in a real browser. Open `index.html` direc
 10. **A long, multi-page PDF** — scroll fast and confirm pages render as they arrive, the page counter keeps up, and switching theme mid-scroll does not leave stale pages behind.
 11. **A non-PDF file**, and if you have them a password-protected and a damaged PDF — each should give its own friendly message and leave the app usable. Drop a mix of good and bad files at once: the good ones should still open.
 12. **The same file twice** — it should switch to the copy already open, not add a duplicate.
-13. **Reload** — theme and zoom should come back; open documents should not, and the welcome screen should be clean.
+13. **Your shelf (in the switcher)** — read partway in, open the switcher and press **Your shelf**. The landing page should return with that document dotted on the shelf; clicking it should drop you back on the same page with no re-render.
+14. **The shelf** — open a document, read a few pages in, then reload. It should be on the shelf with the right page and a part-filled bar, and *not* opened for you. Click it: it should open from storage and land on that page. Reload again after removing it with the × — it should stay gone.
+15. **Storage refused** — try it in a private window. The shelf should simply never appear, with one calm message at most, and everything else should work.
+16. **Reload** — theme and zoom should come back, and the welcome screen should be clean apart from the shelf.
+
+When testing storage in headless Chrome, remember that a persistent `--user-data-dir` keeps IndexedDB between runs — wipe the profile or the second run starts with yesterday's shelf.
 
 Worth a pass on a narrow window (under 640px the toolbar sheds a separator and the switcher name truncates, but the switcher itself stays — it is the only way to reach other documents) and, if the change touches rendering, on a HiDPI screen.

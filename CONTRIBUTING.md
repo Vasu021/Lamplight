@@ -34,6 +34,7 @@ Ideas and "this felt wrong to read" notes are welcome too. The [roadmap](README.
 Two things are easy to miss when changing behaviour:
 
 - **Themes are defined twice** — in `PALETTES` and in the CSS custom properties. See below.
+- **The shelf is real user data.** Anything touching IndexedDB must degrade quietly when storage is unavailable, and removal must actually delete both stores. See [CLAUDE.md](CLAUDE.md#the-shelf-indexeddb).
 - **`generation` is what cancels stale renders.** Any new `await` on a render path needs a `if (gen !== generation) return;` after it, or pages end up painted in the previous theme. [CLAUDE.md](CLAUDE.md#the-parts-that-matter) has the details.
 
 ## Adding a theme

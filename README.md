@@ -17,6 +17,10 @@ Open as many papers as you like and switch between them from the toolbar:
 
 ![The document switcher, listing three open papers](docs/screenshot-switcher.png)
 
+Come back later and your shelf is waiting, with your place in each paper:
+
+![The shelf on the front page, listing three papers with reading progress](docs/screenshot-shelf.png)
+
 ## Why
 
 Reading white-background PDFs on a screen — in a viewer, in VS Code, anywhere — is a small floodlight pointed at your face, and after a few papers it shows. Lamplight opens a PDF locally and re-renders every page in a quieter palette, so a long reading session stops being a squinting match. Figures keep their colours and the text stays selectable, so nothing is lost in the trade.
@@ -25,13 +29,14 @@ Reading white-background PDFs on a screen — in a viewer, in VS Code, anywhere 
 
 - **Open anything** — file picker, or drop PDFs anywhere on the page.
 - **Many documents at once** — open a stack of papers and switch between them from the toolbar. Each one remembers where you were reading.
+- **A shelf that survives closing the tab** — documents you open are kept in this browser, with your place in each. Come back tomorrow, pick one, and carry on from the page you stopped at. Remove any of them in one click.
 - **Three reading themes** — Dusk (slate charcoal), Moss (dark green-grey), Parchment (warm sepia).
 - **Smart invert** — on dark themes, lightness is flipped but hue is preserved, so a blue bar in a chart stays blue.
 - **Text stays text** — selectable and copyable via the pdf.js text layer, with a theme-coloured selection highlight.
 - **Fast on long documents** — pages render lazily as you scroll, sharp on HiDPI screens.
 - **Zoom 50–300%** — from the toolbar or with <kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>+</kbd> and <kbd>−</kbd>.
 - **Jump to any page** — the page counter is editable: click it, type a number, press <kbd>Enter</kbd>. No scrolling through a hundred pages to reach page 94.
-- **Remembers you** — theme and zoom persist between visits; scroll position persists per document.
+- **Remembers you** — theme, zoom and your place in every document persist between visits.
 - **Private by design** — the file is read in your browser and never uploaded anywhere.
 - **Considerate** — friendly errors, visible keyboard focus, responsive layout, respects `prefers-reduced-motion`.
 
@@ -43,9 +48,13 @@ Reading white-background PDFs on a screen — in a viewer, in VS Code, anywhere 
 
 Then choose a PDF or drag one onto the window — drop several at once if you like — and pick a theme from the toolbar at the bottom.
 
+**Your shelf** at the foot of the switcher takes you back to the front page at any time, without closing anything — the documents stay loaded, so stepping back in puts you exactly where you were. A lamp-coloured dot marks the ones still open.
+
+Everything you open goes on **your shelf**, which is waiting on the front page next time you visit — each document with the page you reached and a line showing how far in you are. Click one to carry on where you stopped, or press its **×** to remove it. Nothing is opened for you automatically; the shelf is a list to choose from, not a session to restore.
+
 To go straight to a page, click the page counter in the middle of the toolbar, type the number and press <kbd>Enter</kbd> — numbers outside the document are clamped to its first or last page, so a mistyped 999 lands on the end rather than doing nothing.
 
-With more than one document open, the filename on the left of the toolbar becomes a switcher: it shows how many are open, and clicking it lists them. Pick one to jump to it, press <kbd>×</kbd> to close it, or **Open a PDF…** to add another. Opening a file you already have open just takes you back to it rather than loading a second copy.
+With more than one document open, the filename on the left of the toolbar becomes a switcher: it shows how many are open, and clicking it lists them. Pick one to jump to it, press <kbd>×</kbd> to close it, **Open a PDF…** to add another, or **Your shelf** to step back to the front page. Opening a file you already have open just takes you back to it rather than loading a second copy.
 
 ### Keyboard shortcuts
 
@@ -80,9 +89,13 @@ Pages are observed with an `IntersectionObserver` and rendered just before they 
 
 Every open document keeps its own page list, observer and scroll position; only the active one is in the layout, so the documents you aren't reading cost nothing to keep around. Changing theme or zoom marks all of them stale at once, and each re-renders lazily the next time you look at it.
 
+The shelf uses two IndexedDB stores rather than one: the PDF bytes in `files`, the name, page count and your place in `meta`. They are separate so that remembering a page number never has to rewrite a forty-megabyte blob.
+
 ## Privacy
 
-Your PDF never leaves your machine. It is read with the browser's `File` API, decoded in the tab, and drawn to a canvas — there is no server, no upload, no analytics. The only network requests Lamplight makes are for pdf.js and the Literata font, both from public CDNs, the first time you load the page.
+Your PDFs never leave your machine. They are read with the browser's `File` API, decoded in the tab, and drawn to a canvas — there is no server, no upload, no analytics. The only network requests Lamplight makes are for pdf.js and the Literata font, both from public CDNs, the first time you load the page.
+
+The shelf keeps its copies in **IndexedDB**, which is browser storage on your own device, scoped to this one site. Nothing is synced and nothing is sent anywhere — opening Lamplight on another machine gives you an empty shelf. Removing a document deletes Lamplight's copy immediately; your original file on disk is never touched either way. Clearing site data for the page empties the shelf too.
 
 ## Limitations
 
@@ -90,13 +103,15 @@ Your PDF never leaves your machine. It is read with the browser's `File` API, de
 - Very large PDFs recolour page by page as you scroll, so expect a brief pause on each new page.
 - The first load needs an internet connection to fetch pdf.js and the font.
 - Open documents live in memory for the session. A dozen large PDFs at once will use a lot of it, and closing a document is what gives it back.
+- The shelf stores a copy of each PDF, so it counts against the browser's storage quota for this site. When there is no room left Lamplight says so and keeps reading — remove something from the shelf to make space.
+- The shelf is per browser and per device. It does not follow you to another machine, and clearing site data empties it.
 
 ## Roadmap
 
 - Custom theme colours
 - Offline / PWA support
-- Search within the document, and across open documents
-- Reopen the last session's documents
+- Search within the document, and across the shelf
+- Bookmarks and notes within a document
 
 ## Contributing
 

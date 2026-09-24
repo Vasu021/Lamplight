@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Lamplight – easy-on-the-eyes PDF reader</title>
-<meta name="description" content="Read PDFs in soft, low-glare colours. Open several papers at once and switch between them — a single-file, zero-dependency reader, and your files never leave the browser.">
+<meta name="description" content="Read PDFs in soft, low-glare colours. Keep a shelf of papers and pick up where you left off — a single-file, zero-dependency reader, and your files never leave your device.">
 <link rel="canonical" href="https://vasu021.github.io/Lamplight/">
 <meta name="theme-color" content="#1d2127">
 
@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Lamplight">
 <meta property="og:title" content="Lamplight – easy-on-the-eyes PDF reader">
-<meta property="og:description" content="Lamplight opens any PDF and re-renders it in calm, low-glare colours for comfortable reading, especially academic papers. Keep several documents open at once and switch between them from the toolbar. Smart invert flips lightness while preserving hue, so charts and figures keep their meaning. Text stays selectable. No build step, no upload, no tracking.">
+<meta property="og:description" content="Lamplight opens any PDF and re-renders it in calm, low-glare colours for comfortable reading, especially academic papers. Keep several documents open at once, switch between them from the toolbar, and come back later to a shelf that remembers your place in each. Smart invert flips lightness while preserving hue, so charts and figures keep their meaning. Text stays selectable. No build step, no upload, no tracking.">
 <meta property="og:url" content="https://vasu021.github.io/Lamplight/">
 <meta property="og:image" content="https://vasu021.github.io/Lamplight/docs/screenshot-dusk.png">
 <meta property="og:image:type" content="image/png">
@@ -21,7 +21,7 @@
 <meta property="og:image:alt" content="Lamplight showing an academic paper in the Dusk theme, with a colour bar chart still readable after inversion">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Lamplight – easy-on-the-eyes PDF reader">
-<meta name="twitter:description" content="Read PDFs in soft, low-glare colours. Open several papers at once and switch between them — a single-file, zero-dependency reader, and your files never leave the browser.">
+<meta name="twitter:description" content="Read PDFs in soft, low-glare colours. Keep a shelf of papers and pick up where you left off — a single-file, zero-dependency reader, and your files never leave your device.">
 <meta name="twitter:image" content="https://vasu021.github.io/Lamplight/docs/screenshot-dusk.png">
 <meta name="twitter:image:alt" content="Lamplight showing an academic paper in the Dusk theme, with a colour bar chart still readable after inversion">
 
@@ -35,7 +35,7 @@
   "applicationSubCategory": "PDF reader",
   "operatingSystem": "Any browser",
   "browserRequirements": "Requires JavaScript",
-  "description": "Lamplight opens any PDF and re-renders it in calm, low-glare colours for comfortable reading, especially academic papers. Keep several documents open at once and switch between them from the toolbar. Smart invert flips lightness while preserving hue, so charts and figures keep their meaning. Text stays selectable. No build step, no upload, no tracking.",
+  "description": "Lamplight opens any PDF and re-renders it in calm, low-glare colours for comfortable reading, especially academic papers. Keep several documents open at once, switch between them from the toolbar, and come back later to a shelf that remembers your place in each. Smart invert flips lightness while preserving hue, so charts and figures keep their meaning. Text stays selectable. No build step, no upload, no tracking.",
   "screenshot": "https://vasu021.github.io/Lamplight/docs/screenshot-dusk.png",
   "softwareVersion": "1.0",
   "license": "https://opensource.org/licenses/MIT",
@@ -43,6 +43,7 @@
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "featureList": [
     "Open several PDFs at once and switch between them",
+    "A shelf that remembers your documents and your place in them",
     "Three low-glare reading themes: Dusk, Moss and Parchment",
     "Smart invert that preserves hue so figures stay readable",
     "Jump to any page by typing its number",
@@ -110,6 +111,44 @@
   .drop:hover, body.dragging .drop { border-color: var(--lamp); background: color-mix(in srgb, var(--lamp) 7%, transparent); }
   .drop strong { color: var(--lamp); font-weight: 600; }
   .drop small { display: block; color: var(--muted); margin-top: .35rem; font-size: .85rem; }
+  /* The shelf: documents this browser is keeping for next time */
+  .shelf { margin-top: 2.2rem; text-align: left; }
+  .shelf-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    margin-bottom: .45rem; padding: 0 6px;
+  }
+  .shelf-head h2 {
+    font-size: .74rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin: 0;
+  }
+  .shelf-size { font-size: .74rem; color: var(--muted); opacity: .8; font-variant-numeric: tabular-nums; }
+  .shelf ul { list-style: none; margin: 0; padding: 0; }
+  .shelf li { display: flex; align-items: center; gap: 6px; border-top: 1px solid var(--line); }
+  .shelf li:last-child { border-bottom: 1px solid var(--line); }
+  .shelf-open {
+    flex: 1; min-width: 0; background: none; border: 0; cursor: pointer; border-radius: 8px;
+    padding: 12px 6px; text-align: left; color: var(--ink); font-size: .92rem;
+  }
+  .shelf-open:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+  .shelf-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .shelf li.is-open .shelf-name::before {
+    content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--lamp); margin-right: 8px; vertical-align: middle;
+  }
+  .shelf-meta { display: block; margin-top: 3px; font-size: .76rem; color: var(--muted); }
+  .shelf-bar {
+    display: block; height: 2px; margin-top: 8px; border-radius: 2px;
+    background: color-mix(in srgb, var(--ink) 13%, transparent); overflow: hidden;
+  }
+  .shelf-bar i { display: block; height: 100%; background: var(--lamp); border-radius: 2px; }
+  .shelf-remove {
+    flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; background: none;
+    color: var(--muted); font-size: 1.05rem; line-height: 1; cursor: pointer; opacity: .55;
+    transition: opacity .15s ease, color .2s ease, background-color .2s ease;
+  }
+  .shelf li:hover .shelf-remove { opacity: 1; }
+  .shelf-remove:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 12%, transparent); }
+
   .privacy { color: var(--muted); font-size: .85rem; margin-top: 1.4rem; }
   .error { color: #e58f7b; margin-top: 1rem; min-height: 1.5em; font-size: .92rem; }
   .credit {
@@ -124,10 +163,10 @@
   .credit a:hover { color: var(--lamp); background: color-mix(in srgb, var(--lamp) 12%, transparent); }
   .credit svg { display: block; width: 16px; height: 16px; fill: currentColor; }
 
-  /* Reader: one shelf holds every open document; only one is shown */
-  #shelf { display: none; padding: 28px 12px 110px; }
+  /* Reader: one viewer holds every open document; only one is shown */
+  #viewer { display: none; padding: 28px 12px 110px; }
   body.reading .welcome { display: none; }
-  body.reading #shelf { display: block; }
+  body.reading #viewer { display: block; }
   .doc { display: none; }
   .doc.open { display: block; }
   .page {
@@ -233,12 +272,24 @@
     background: none; cursor: pointer; color: var(--muted); font-size: 1.1rem; line-height: 1;
   }
   .menu-close:hover { background: color-mix(in srgb, var(--ink) 12%, transparent); color: var(--ink); }
+  .menu-label {
+    padding: 9px 10px 5px; font-size: .68rem; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--line); margin-top: 4px;
+  }
+  .menu-pick.is-shelved .menu-name { color: var(--muted); }
   .menu-add {
     display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 4px; padding: 10px;
     background: none; border: 0; border-top: 1px solid var(--line);
     cursor: pointer; color: var(--lamp); font-size: .86rem; text-align: left;
   }
-  .menu-add:hover { background: color-mix(in srgb, var(--lamp) 10%, transparent); border-radius: 0 0 9px 9px; }
+  .menu-add:hover { background: color-mix(in srgb, var(--lamp) 10%, transparent); }
+  .menu-home { margin-top: 0; border-top: 0; color: var(--ink); }
+  .menu-home:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); border-radius: 0 0 9px 9px; }
+  .menu-lamp {
+    flex: none; width: 13px; height: 13px; border-radius: 50%;
+    background: radial-gradient(circle at 50% 45%, var(--lamp) 0 28%,
+      color-mix(in srgb, var(--lamp) 42%, transparent) 54%, transparent 76%);
+  }
 
   /* Errors raised while reading, where the welcome screen isn't visible */
   .toast {
@@ -281,7 +332,16 @@
         <small>Open as many as you like and switch between them</small>
       </label>
       <input type="file" id="file" accept="application/pdf,.pdf" multiple hidden>
-      <p class="privacy">Your file is opened in this browser tab and never uploaded anywhere.</p>
+
+      <section class="shelf" id="shelf" hidden aria-labelledby="shelfTitle">
+        <div class="shelf-head">
+          <h2 id="shelfTitle">Your shelf</h2>
+          <span class="shelf-size" id="shelfSize"></span>
+        </div>
+        <ul id="shelfList"></ul>
+      </section>
+
+      <p class="privacy">Your files are opened in this browser and never uploaded anywhere. Lamplight keeps them on your shelf until you remove them.</p>
       <p class="error" id="error" role="alert"></p>
     </div>
     <footer class="credit">
@@ -297,7 +357,7 @@
     </footer>
   </main>
 
-  <div id="shelf"></div>
+  <div id="viewer"></div>
 
   <nav class="bar" aria-label="Reading controls">
     <div class="bar-inner">
@@ -333,6 +393,9 @@
       <button class="menu-add" id="menuAdd" type="button" role="menuitem">
         <span aria-hidden="true">+</span> Open a PDF&hellip;
       </button>
+      <button class="menu-add menu-home" id="menuHome" type="button" role="menuitem">
+        <span class="menu-lamp" aria-hidden="true"></span> Your shelf
+      </button>
     </div>
   </nav>
 
@@ -352,13 +415,102 @@
   };
 
   const $ = id => document.getElementById(id);
-  const fileInput = $("file"), shelf = $("shelf"), errorEl = $("error");
+  const fileInput = $("file"), viewer = $("viewer"), errorEl = $("error");
   const docsBtn = $("docsBtn"), docsMenu = $("docsMenu"), docsList = $("docsList");
   const pageInput = $("pageInput"), pageTotal = $("pageTotal");
+  const shelfEl = $("shelf"), shelfList = $("shelfList"), shelfSize = $("shelfSize");
   const store = {
     get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} }
   };
+
+  // ---- The shelf -------------------------------------------------------
+  // Documents are kept in IndexedDB so they survive a reload. Bytes and
+  // progress live in separate stores on purpose: remembering a page number
+  // must not rewrite a 40MB blob. Every call here is non-fatal — if storage
+  // is unavailable (private browsing, no quota) the reader still works, it
+  // just forgets.
+  const DB = "lamplight", FILES = "files", META = "meta";
+  let dbPromise = null, storageWarned = false;
+
+  function db() {
+    if (!dbPromise) {
+      dbPromise = new Promise((resolve, reject) => {
+        let req;
+        try { req = indexedDB.open(DB, 1); } catch (e) { return reject(e); }
+        req.onupgradeneeded = () => {
+          const d = req.result;
+          if (!d.objectStoreNames.contains(FILES)) d.createObjectStore(FILES, { keyPath: "id" });
+          if (!d.objectStoreNames.contains(META)) d.createObjectStore(META, { keyPath: "id" });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+        req.onblocked = () => reject(new Error("blocked"));
+      });
+      dbPromise.catch(() => { dbPromise = null; });
+    }
+    return dbPromise;
+  }
+
+  function tx(name, mode, run) {
+    return db().then(d => new Promise((resolve, reject) => {
+      const t = d.transaction(name, mode), req = run(t.objectStore(name));
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+      t.onabort = () => reject(t.error);
+    }));
+  }
+
+  const metaAll = () => tx(META, "readonly", s => s.getAll()).catch(() => []);
+  const metaGet = id => tx(META, "readonly", s => s.get(id)).catch(() => null);
+  const metaPut = rec => tx(META, "readwrite", s => s.put(rec));
+  const fileGet = id => tx(FILES, "readonly", s => s.get(id)).catch(() => null);
+  const shelfId = file => file.name + "::" + file.size;
+
+  async function shelfDrop(id) {
+    await tx(META, "readwrite", s => s.delete(id)).catch(() => {});
+    await tx(FILES, "readwrite", s => s.delete(id)).catch(() => {});
+  }
+
+  // Store the bytes once; refresh the metadata every time it is opened.
+  async function remember(file, doc) {
+    const id = doc.shelfId;
+    try {
+      const have = await tx(FILES, "readonly", s => s.getKey(id));
+      if (!have) await tx(FILES, "readwrite", s => s.put({ id, blob: file, fileName: file.name }));
+      const prev = await metaGet(id);
+      await metaPut({
+        id, name: doc.name, fileName: file.name, size: file.size,
+        pages: doc.pages.length, page: (prev && prev.page) || 1, openedAt: Date.now()
+      });
+    } catch (e) {
+      if (!storageWarned) {
+        storageWarned = true;
+        notify(e && e.name === "QuotaExceededError"
+          ? "There isn\u2019t room to keep this one for next time. Remove something from your shelf to make space."
+          : "This browser won\u2019t let Lamplight save documents, so your shelf stays empty. Reading still works.");
+      }
+    }
+  }
+
+  // Progress is written on a debounce; a page number is cheap, but not free.
+  let rememberTimer = null;
+  function rememberPage(now) {
+    const doc = active();
+    if (!doc || !doc.shelfId) return;
+    // Read the position synchronously: by the time the write resolves the
+    // reader may have switched documents, and currentPage() would then be
+    // measuring the wrong one.
+    const page = currentPage() + 1;
+    clearTimeout(rememberTimer);
+    const write = async () => {
+      const m = await metaGet(doc.shelfId);
+      if (!m || m.page === page) return;
+      m.page = page; m.openedAt = Date.now();
+      metaPut(m).catch(() => {});
+    };
+    if (now) write(); else rememberTimer = setTimeout(write, 600);
+  }
 
   // Every open document lives in `docs`; one of them is active at a time.
   //   { id, name, file, pdf, pages, el, scrollY, laidOut, observer }
@@ -402,11 +554,11 @@
     ctx.putImageData(img, 0, 0);
   }
 
-  // Measured on the shelf, not the document, so a hidden document still sizes
+  // Measured on the viewer, not the document, so a hidden document still sizes
   // correctly when it is switched to.
   function baseScale(page) {
     const vp = page.getViewport({ scale: 1 });
-    const avail = Math.min(shelf.clientWidth - 24, 900);
+    const avail = Math.min(viewer.clientWidth - 24, 900);
     return Math.max(avail / vp.width, 0.3);
   }
 
@@ -505,7 +657,8 @@
     el.className = "doc";
     el.setAttribute("aria-label", file.name);
     const doc = { id: nextId++, name: file.name.replace(/\.pdf$/i, ""), file, pdf,
-                  pages: [], el, scrollY: 0, laidOut: false, observer: null };
+                  pages: [], el, scrollY: 0, laidOut: false, observer: null,
+                  shelfId: shelfId(file), pendingPage: 0 };
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const pageEl = document.createElement("div");
@@ -515,8 +668,11 @@
       el.appendChild(pageEl);
       doc.pages.push({ page, el: pageEl, gen: -1 });
     }
-    shelf.appendChild(el);
+    viewer.appendChild(el);
     docs.push(doc);
+    const saved = await metaGet(doc.shelfId);
+    if (saved && saved.page > 1) doc.pendingPage = Math.min(saved.page, doc.pages.length);
+    await remember(file, doc);
     return doc;
   }
 
@@ -537,7 +693,7 @@
       document.body.classList.add("reading");
       switchTo(first.id);
     }
-    renderList();
+    await refreshShelf();
     if (problems.length) {
       notify(problems.length === 1 ? problems[0]
         : `${problems.length} files couldn’t be opened. ${problems[0]}`);
@@ -546,13 +702,14 @@
 
   function switchTo(id) {
     const cur = active();
-    if (cur && cur.id !== id) cur.scrollY = window.scrollY;
+    if (cur && cur.id !== id) { rememberPage(true); cur.scrollY = window.scrollY; }
     activeId = id;
     for (const d of docs) d.el.classList.toggle("open", d.id === id);
     const doc = active();
     if (!doc) return;
     if (!doc.laidOut) layoutDoc(doc);
-    window.scrollTo(0, doc.scrollY || 0);
+    if (doc.pendingPage) { const p = doc.pendingPage; doc.pendingPage = 0; goToPage(p); }
+    else window.scrollTo(0, doc.scrollY || 0);
     document.title = doc.file.name + " – Lamplight";
     updateChrome();
   }
@@ -560,6 +717,7 @@
   function closeDoc(id) {
     const i = docs.findIndex(d => d.id === id);
     if (i < 0) return;
+    if (activeId === id) rememberPage(true);
     const [doc] = docs.splice(i, 1);
     if (doc.observer) doc.observer.disconnect();
     doc.el.remove();
@@ -576,8 +734,94 @@
         closeMenu();
       }
     }
-    renderList();
+    refreshShelf();
     updateChrome();
+  }
+
+  // ---- Shelf UI --------------------------------------------------------
+  let shelved = [];                       // cached metadata, most recent first
+
+  const fmtSize = n => n >= 1048576 ? (n / 1048576).toFixed(1) + " MB"
+                                    : Math.max(1, Math.round(n / 1024)) + " KB";
+
+  async function refreshShelf() {
+    shelved = (await metaAll()).sort((a, b) => (b.openedAt || 0) - (a.openedAt || 0));
+    renderShelf();
+    renderList();
+  }
+
+  function renderShelf() {
+    shelfEl.hidden = shelved.length === 0;
+    shelfSize.textContent = shelved.length
+      ? fmtSize(shelved.reduce((n, it) => n + (it.size || 0), 0)) + " kept here"
+      : "";
+    shelfList.innerHTML = "";
+    for (const it of shelved) {
+      const li = document.createElement("li");
+      const loaded = docs.some(d => d.shelfId === it.id);
+      if (loaded) li.className = "is-open";
+
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "shelf-open";
+      // pages behind you, not page number: page 1 of 2 is 0% read, not 50%
+      const read = it.pages > 1
+        ? Math.min(100, Math.max(0, Math.round((((it.page || 1) - 1) / (it.pages - 1)) * 100))) : 0;
+      open.innerHTML = '<span class="shelf-name"></span><span class="shelf-meta"></span>'
+        + '<span class="shelf-bar" aria-hidden="true"><i></i></span>';
+      open.querySelector(".shelf-name").textContent = it.name;
+      open.querySelector(".shelf-meta").textContent =
+        ((it.page || 1) > 1 ? "Page " + it.page + " of " + it.pages
+                            : it.pages + (it.pages === 1 ? " page" : " pages"))
+        + " \u00b7 " + fmtSize(it.size || 0);
+      open.querySelector(".shelf-bar i").style.width = read + "%";
+      open.setAttribute("aria-label", loaded ? "Return to " + it.name
+        : (it.page || 1) > 1 ? "Continue " + it.name + " from page " + it.page
+        : "Open " + it.name);
+      open.addEventListener("click", () => openFromShelf(it.id));
+
+      const rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "shelf-remove";
+      rm.setAttribute("aria-label", "Remove " + it.name + " from your shelf");
+      rm.innerHTML = "&times;";
+      rm.addEventListener("click", async e => {
+        e.stopPropagation();
+        const live = docs.find(d => d.shelfId === it.id);
+        if (live) closeDoc(live.id);
+        await shelfDrop(it.id);
+        await refreshShelf();
+      });
+
+      li.append(open, rm);
+      shelfList.appendChild(li);
+    }
+  }
+
+  // Back to the landing page. Documents stay loaded, so returning to one is
+  // instant and lands exactly where it was left.
+  function goHome() {
+    const doc = active();
+    if (doc) { rememberPage(true); doc.scrollY = window.scrollY; }
+    closeMenu();
+    document.body.classList.remove("reading");
+    document.title = "Lamplight – easy-on-the-eyes PDF reader";
+    window.scrollTo(0, 0);
+    refreshShelf();
+  }
+
+  async function openFromShelf(id) {
+    const live = docs.find(d => d.shelfId === id);
+    if (live) { document.body.classList.add("reading"); switchTo(live.id); closeMenu(); return; }
+    const rec = await fileGet(id);
+    if (!rec || !rec.blob) {
+      notify("That document is no longer stored in this browser.");
+      await shelfDrop(id);
+      await refreshShelf();
+      return;
+    }
+    closeMenu();
+    await openFiles([new File([rec.blob], rec.fileName || "document.pdf", { type: "application/pdf" })]);
   }
 
   // Switcher menu
@@ -612,6 +856,32 @@
       row.append(pick, shut);
       docsList.appendChild(row);
     });
+
+    // Anything on the shelf that isn't open yet, so it's reachable from here too
+    const resting = shelved.filter(it => !docs.some(d => d.shelfId === it.id));
+    if (resting.length) {
+      const label = document.createElement("li");
+      label.className = "menu-label";
+      label.textContent = "On your shelf";
+      docsList.appendChild(label);
+      for (const it of resting) {
+        const row = document.createElement("li");
+        row.className = "menu-row";
+        const pick = document.createElement("button");
+        pick.type = "button";
+        pick.className = "menu-pick is-shelved";
+        pick.setAttribute("role", "menuitem");
+        pick.innerHTML = '<span class="menu-dot" aria-hidden="true"></span>'
+          + '<span class="menu-name"></span><span class="menu-key"></span>';
+        pick.querySelector(".menu-name").textContent = it.name;
+        pick.querySelector(".menu-key").textContent = (it.page || 1) > 1 ? "p." + it.page : "";
+        pick.setAttribute("aria-label", (it.page || 1) > 1
+          ? "Continue " + it.name + " from page " + it.page : "Open " + it.name);
+        pick.addEventListener("click", () => openFromShelf(it.id));
+        row.appendChild(pick);
+        docsList.appendChild(row);
+      }
+    }
   }
 
   const menuIsOpen = () => !docsMenu.hidden;
@@ -690,6 +960,7 @@
   $("openAnother").addEventListener("click", () => fileInput.click());
   $("menuAdd").addEventListener("click", () => { closeMenu(); fileInput.click(); });
   docsBtn.addEventListener("click", () => menuIsOpen() ? closeMenu(true) : openMenu());
+  $("menuHome").addEventListener("click", goHome);
   $("zoomIn").addEventListener("click", () => setZoom(zoom + 0.1));
   $("zoomOut").addEventListener("click", () => setZoom(zoom - 0.1));
   document.querySelectorAll(".swatch").forEach(s => s.addEventListener("click", () => {
@@ -731,7 +1002,14 @@
     else updatePageLabel(true);
   });
 
-  window.addEventListener("scroll", () => requestAnimationFrame(() => updatePageLabel()), { passive: true });
+  window.addEventListener("scroll", () => requestAnimationFrame(() => {
+    updatePageLabel();
+    rememberPage();
+  }), { passive: true });
+  window.addEventListener("pagehide", () => rememberPage(true));
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") rememberPage(true);
+  });
   let resizeTimer;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
@@ -764,6 +1042,8 @@
     if (t === "drop" || e.relatedTarget === null) document.body.classList.remove("dragging");
   }));
   window.addEventListener("drop", e => openFiles(e.dataTransfer.files));
+
+  refreshShelf();
 })();
 </script>
 </body>
