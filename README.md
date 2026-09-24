@@ -29,7 +29,8 @@ Reading white-background PDFs on a screen — in a viewer, in VS Code, anywhere 
 - **Smart invert** — on dark themes, lightness is flipped but hue is preserved, so a blue bar in a chart stays blue.
 - **Text stays text** — selectable and copyable via the pdf.js text layer, with a theme-coloured selection highlight.
 - **Fast on long documents** — pages render lazily as you scroll, sharp on HiDPI screens.
-- **Zoom 50–300%** — from the toolbar or with <kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>+</kbd> and <kbd>−</kbd>, with a live page counter.
+- **Zoom 50–300%** — from the toolbar or with <kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>+</kbd> and <kbd>−</kbd>.
+- **Jump to any page** — the page counter is editable: click it, type a number, press <kbd>Enter</kbd>. No scrolling through a hundred pages to reach page 94.
 - **Remembers you** — theme and zoom persist between visits; scroll position persists per document.
 - **Private by design** — the file is read in your browser and never uploaded anywhere.
 - **Considerate** — friendly errors, visible keyboard focus, responsive layout, respects `prefers-reduced-motion`.
@@ -42,6 +43,8 @@ Reading white-background PDFs on a screen — in a viewer, in VS Code, anywhere 
 
 Then choose a PDF or drag one onto the window — drop several at once if you like — and pick a theme from the toolbar at the bottom.
 
+To go straight to a page, click the page counter in the middle of the toolbar, type the number and press <kbd>Enter</kbd> — numbers outside the document are clamped to its first or last page, so a mistyped 999 lands on the end rather than doing nothing.
+
 With more than one document open, the filename on the left of the toolbar becomes a switcher: it shows how many are open, and clicking it lists them. Pick one to jump to it, press <kbd>×</kbd> to close it, or **Open a PDF…** to add another. Opening a file you already have open just takes you back to it rather than loading a second copy.
 
 ### Keyboard shortcuts
@@ -50,6 +53,9 @@ With more than one document open, the filename on the left of the toolbar become
 | :--- | :--- |
 | <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>+</kbd> | Zoom in |
 | <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>−</kbd> | Zoom out |
+| <kbd>Enter</kbd> *(in the page counter)* | Jump to the page you typed |
+| <kbd>↑</kbd> <kbd>↓</kbd> *(in the page counter)* | Step forward / back one page |
+| <kbd>Esc</kbd> *(in the page counter)* | Cancel and go back to the current page |
 | <kbd>Alt</kbd>/<kbd>⌥</kbd> + <kbd>1</kbd>…<kbd>9</kbd> | Jump to the *n*th open document |
 | <kbd>Alt</kbd>/<kbd>⌥</kbd> + <kbd>←</kbd> <kbd>→</kbd> | Previous / next document (wraps) |
 | <kbd>Esc</kbd> | Close the document switcher |

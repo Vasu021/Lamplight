@@ -33,6 +33,7 @@ All the JavaScript lives in one IIFE at the bottom of `index.html`.
 - **`layoutDoc(doc)`** — sizes one document's page elements and wires up a fresh `IntersectionObserver` (900px root margin) for it. Called when a document is first shown and whenever it is stale.
 - **`invalidate()`** — theme, zoom or width changed, so every page of every document is now stale. Bumps `generation`, clears every `laidOut` flag, and re-lays out only the active document; the others are re-laid out lazily by `switchTo` when you next look at them.
 - **`openFiles(list)`** — the entry point for both the picker and drag-and-drop, taking any number of files. Opens each in turn, collects failures rather than aborting on the first, switches to the first success, and reports what went wrong. **`openOne` is where all the user-facing error strings live.**
+- **`updatePageLabel(force)` / `goToPage(n)`** — the page counter is an `<input>`, not a label. `updatePageLabel` refuses to overwrite the field while it has focus unless `force` is set, so scrolling never fights what the reader is typing; `force` is used after a jump, where the field must correct itself to the clamped page. `goToPage` clamps to `1…pages.length` and scrolls the page element into view.
 - **`switchTo(id)` / `closeDoc(id)`** — saving and restoring `scrollY` on the way out and in. `closeDoc` destroys the pdf.js document, disconnects the observer, and falls back to a neighbour; closing the last one returns to the welcome screen.
 - **`generation`** — a counter bumped by `invalidate()`. `renderPage` captures it at the start and bails out after each `await` if it no longer matches. This is what cancels stale renders when the user zooms or switches theme mid-render. **Any new `await` inside a render path needs a `if (gen !== generation) return;` after it**, or you will get pages painted in the previous theme. It is deliberately global rather than per-document: a theme change invalidates everything at once.
 
@@ -55,6 +56,16 @@ Conventions worth keeping:
 - Document shortcuts are **`Alt`-based**, because `Ctrl`/`⌘` + `Tab` and `+ W` belong to the browser. They are keyed on `e.code` (`Digit1`…`Digit9`), not `e.key`, because `Alt`+`1` does not produce `"1"` on macOS or on many non-US layouts.
 - The popover is a `role="menu"` with `menuitemradio` rows: `Escape` closes it and returns focus to the trigger, arrow keys move between rows.
 - Opening a file that is already open switches to it instead of loading a second copy, matched on name *and* size.
+
+## The page counter
+
+It is an input styled to look like text until you touch it. Three rules keep it from being annoying:
+
+- **Blur only navigates if the number actually changed.** Otherwise tabbing past the field would snap the reader to the top of the page they were already on.
+- **Digits only**, sanitised on `input` rather than rejected on submit, with `maxLength` and a `ch` width derived from the page count.
+- **`Escape` reverts** to the real current page rather than committing.
+
+Note for anyone testing this in headless Chrome: `focus()` and `blur()` silently do nothing unless `Page.bringToFront` has been called, so blur-to-commit will look broken when it is not.
 
 ## Errors
 
@@ -83,11 +94,12 @@ There is no test suite; it is manual, in a real browser. Open `index.html` direc
 4. **Scroll memory** — scroll deep into one document, switch away, switch back; you should land where you left.
 5. **Close** — close a background document (the one you are reading should not move) and close the active one (you should land on a neighbour). Close them all: you should get the welcome screen back, and be able to open again.
 6. **Each theme** — dusk, moss, parchment. Page background, chrome and figures should all change, with no flash of un-recoloured white. Switch theme, then switch to a document you have not looked at since; it should come back in the new theme, not the old one.
-7. **Zoom** — toolbar buttons and <kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>+</kbd>/<kbd>−</kbd>, out to both ends of the 50–300% range. Position should be roughly preserved.
-8. **Text selection** — select a paragraph and copy it; the highlight should be theme-coloured and land on the right words.
-9. **A long, multi-page PDF** — scroll fast and confirm pages render as they arrive, the page counter keeps up, and switching theme mid-scroll does not leave stale pages behind.
-10. **A non-PDF file**, and if you have them a password-protected and a damaged PDF — each should give its own friendly message and leave the app usable. Drop a mix of good and bad files at once: the good ones should still open.
-11. **The same file twice** — it should switch to the copy already open, not add a duplicate.
-12. **Reload** — theme and zoom should come back; open documents should not, and the welcome screen should be clean.
+7. **The page counter** — on a long document, click it, type a page and press <kbd>Enter</kbd>; you should land on that page. Try a number past the end (clamps to the last page), a `0` (clamps to the first), letters (ignored), <kbd>Esc</kbd> (reverts), and <kbd>↑</kbd>/<kbd>↓</kbd> (steps). Tab into and out of the field without typing — the page must not move. Then scroll by hand and watch the number keep up.
+8. **Zoom** — toolbar buttons and <kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>+</kbd>/<kbd>−</kbd>, out to both ends of the 50–300% range. Position should be roughly preserved.
+9. **Text selection** — select a paragraph and copy it; the highlight should be theme-coloured and land on the right words.
+10. **A long, multi-page PDF** — scroll fast and confirm pages render as they arrive, the page counter keeps up, and switching theme mid-scroll does not leave stale pages behind.
+11. **A non-PDF file**, and if you have them a password-protected and a damaged PDF — each should give its own friendly message and leave the app usable. Drop a mix of good and bad files at once: the good ones should still open.
+12. **The same file twice** — it should switch to the copy already open, not add a duplicate.
+13. **Reload** — theme and zoom should come back; open documents should not, and the welcome screen should be clean.
 
 Worth a pass on a narrow window (under 640px the toolbar sheds a separator and the switcher name truncates, but the switcher itself stays — it is the only way to reach other documents) and, if the change touches rendering, on a HiDPI screen.
