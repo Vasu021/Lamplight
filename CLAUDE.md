@@ -8,15 +8,33 @@ The entire app is `index.html` — markup, CSS and JavaScript in one document, s
 
 Keep it that way. The single file *is* the feature: a user can download one `index.html`, open it from disk with no toolchain, and read a PDF. Splitting out `app.js` and `styles.css` would cost that and buy very little at this size. If the file ever grows past the point of comfort, say so and discuss before restructuring.
 
+The corollary is that there is no state outside the tab. Open documents are `File` objects held in memory; they cannot be persisted and are gone on reload. Only theme and zoom go to `localStorage`.
+
+## The document model
+
+Lamplight holds several PDFs open at once. Everything hangs off two module-level values:
+
+```js
+let docs = [], activeId = null;
+```
+
+`docs` is an array of `{ id, name, file, pdf, pages, el, scrollY, laidOut, observer }`. Each document owns its own `<section class="doc">`, its own `IntersectionObserver`, and its own remembered scroll position. Only the active one carries the `.open` class, and only that one is in the layout — the rest are `display: none`, which is why they cost nothing to keep around and why their observers stay quiet.
+
+Each entry of `doc.pages` is `{ page, el, gen }`. `gen` is the render generation its canvas was painted at; `-1` means never painted.
+
+**The order of operations matters when opening.** `baseScale` measures `#shelf`, not the document section, precisely so a hidden document still sizes correctly — but `#shelf` itself is `display: none` until `body.reading` is set. So `body.reading` must go on *before* the first `layoutDoc`, which is why `openFiles` sets it before calling `switchTo`.
+
 ## The parts that matter
 
 All the JavaScript lives in one IIFE at the bottom of `index.html`.
 
 - **`recolour(ctx, w, h)`** — the heart of the app. Walks the rendered canvas pixel by pixel and maps it into the current theme. On dark themes it does a *smart invert*: `k = 255 − max(r,g,b) − min(r,g,b)` added to every channel flips lightness while preserving hue, then the result is mapped linearly onto the palette's `bg`→`fg` range so nothing is pure black or pure white. Parchment uses the same linear mapping with `invert: false`. This is the one function where a change is immediately visible on every page — test it against a PDF with colour figures, not just body text.
-- **`renderPage(entry)`** — renders one page to a canvas at `baseScale × zoom × devicePixelRatio` (DPR capped at 2.5), recolours it, builds the pdf.js text layer over it, and swaps both into the page element in one go.
-- **`layout()`** — sizes every page element, resets the render flags, and wires up a fresh `IntersectionObserver` (900px root margin) so pages render just before they scroll into view. Called on open, on zoom, on theme change, and on debounced resize.
-- **`openFile(file)`** — validates the file is a PDF, loads it with pdf.js, destroys any previous document, builds one placeholder element per page, and hands off to `layout()`. All the user-facing error strings live here.
-- **`generation`** — a counter incremented by `layout()`. `renderPage` captures it at the start and bails out after each `await` if it no longer matches. This is what cancels stale renders when the user zooms or switches theme mid-render. **Any new `await` inside a render path needs a `if (gen !== generation) return;` after it**, or you will get pages painted in the previous theme.
+- **`renderPage(doc, entry)`** — renders one page to a canvas at `baseScale × zoom × devicePixelRatio` (DPR capped at 2.5), recolours it, builds the pdf.js text layer over it, and swaps both into the page element in one go.
+- **`layoutDoc(doc)`** — sizes one document's page elements and wires up a fresh `IntersectionObserver` (900px root margin) for it. Called when a document is first shown and whenever it is stale.
+- **`invalidate()`** — theme, zoom or width changed, so every page of every document is now stale. Bumps `generation`, clears every `laidOut` flag, and re-lays out only the active document; the others are re-laid out lazily by `switchTo` when you next look at them.
+- **`openFiles(list)`** — the entry point for both the picker and drag-and-drop, taking any number of files. Opens each in turn, collects failures rather than aborting on the first, switches to the first success, and reports what went wrong. **`openOne` is where all the user-facing error strings live.**
+- **`switchTo(id)` / `closeDoc(id)`** — saving and restoring `scrollY` on the way out and in. `closeDoc` destroys the pdf.js document, disconnects the observer, and falls back to a neighbour; closing the last one returns to the welcome screen.
+- **`generation`** — a counter bumped by `invalidate()`. `renderPage` captures it at the start and bails out after each `await` if it no longer matches. This is what cancels stale renders when the user zooms or switches theme mid-render. **Any new `await` inside a render path needs a `if (gen !== generation) return;` after it**, or you will get pages painted in the previous theme. It is deliberately global rather than per-document: a theme change invalidates everything at once.
 
 ## Themes
 
@@ -26,6 +44,21 @@ A theme is defined in two places and both must be updated together:
 - **CSS custom properties** under `:root[data-reading="<name>"]` — `--bg`, `--surface`, `--ink`, `--muted`, `--lamp`, `--line`, and optionally `--page-shadow`, the colours for the chrome around the page.
 
 `PALETTES[x].bg` should match `--surface` and `PALETTES[x].fg` should match `--ink`, or the canvas will not sit flush with its page element. A new theme also needs a `.swatch.<name>` gradient rule and a `<button class="swatch …" data-theme="…">` in the toolbar. `dusk` is the fallback when the stored theme is unknown.
+
+## The switcher
+
+The toolbar's filename is a button (`#docsBtn`) that opens a popover (`#docsMenu`) listing every open document. `renderList()` rebuilds the list from `docs` on every change — it is small enough that diffing would be more code than it saves.
+
+Conventions worth keeping:
+
+- The count badge appears only at two or more documents; at one the toolbar looks exactly as it did before the feature existed.
+- Document shortcuts are **`Alt`-based**, because `Ctrl`/`⌘` + `Tab` and `+ W` belong to the browser. They are keyed on `e.code` (`Digit1`…`Digit9`), not `e.key`, because `Alt`+`1` does not produce `"1"` on macOS or on many non-US layouts.
+- The popover is a `role="menu"` with `menuitemradio` rows: `Escape` closes it and returns focus to the trigger, arrow keys move between rows.
+- Opening a file that is already open switches to it instead of loading a second copy, matched on name *and* size.
+
+## Errors
+
+The welcome screen has an inline error line (`#error`), but once you are reading it is hidden. `notify(msg)` routes to whichever is visible: the inline line when nothing is open, a transient toast (`#toast`) when something is. Opening several files at once collects failures rather than stopping at the first, so one bad file never costs you the good ones.
 
 ## pdf.js
 
@@ -45,11 +78,16 @@ Pinned to **3.11.174** from cdnjs, loaded as two `<script>` tags — the library
 There is no test suite; it is manual, in a real browser. Open `index.html` directly and check:
 
 1. **Open a PDF** — both by picker and by dropping it anywhere on the page.
-2. **Each theme** — dusk, moss, parchment. Page background, chrome and figures should all change, with no flash of un-recoloured white.
-3. **Zoom** — toolbar buttons and <kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>+</kbd>/<kbd>−</kbd>, out to both ends of the 50–300% range. Position should be roughly preserved.
-4. **Text selection** — select a paragraph and copy it; the highlight should be theme-coloured and land on the right words.
-5. **A long, multi-page PDF** — scroll fast and confirm pages render as they arrive, the page counter keeps up, and switching theme mid-scroll does not leave stale pages behind.
-6. **A non-PDF file**, and if you have them a password-protected and a damaged PDF — each should give its own friendly message and leave the app usable.
-7. **Reload** — theme and zoom should come back.
+2. **Open several at once** — select three in the picker, and separately drop three at once. All should appear in the switcher, with the first one shown.
+3. **Switch between them** — by clicking a row, by <kbd>⌥</kbd><kbd>1</kbd>…<kbd>9</kbd>, and by <kbd>⌥</kbd><kbd>←</kbd>/<kbd>→</kbd> (which should wrap). The toolbar name, count badge, page counter and window title should all follow.
+4. **Scroll memory** — scroll deep into one document, switch away, switch back; you should land where you left.
+5. **Close** — close a background document (the one you are reading should not move) and close the active one (you should land on a neighbour). Close them all: you should get the welcome screen back, and be able to open again.
+6. **Each theme** — dusk, moss, parchment. Page background, chrome and figures should all change, with no flash of un-recoloured white. Switch theme, then switch to a document you have not looked at since; it should come back in the new theme, not the old one.
+7. **Zoom** — toolbar buttons and <kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>+</kbd>/<kbd>−</kbd>, out to both ends of the 50–300% range. Position should be roughly preserved.
+8. **Text selection** — select a paragraph and copy it; the highlight should be theme-coloured and land on the right words.
+9. **A long, multi-page PDF** — scroll fast and confirm pages render as they arrive, the page counter keeps up, and switching theme mid-scroll does not leave stale pages behind.
+10. **A non-PDF file**, and if you have them a password-protected and a damaged PDF — each should give its own friendly message and leave the app usable. Drop a mix of good and bad files at once: the good ones should still open.
+11. **The same file twice** — it should switch to the copy already open, not add a duplicate.
+12. **Reload** — theme and zoom should come back; open documents should not, and the welcome screen should be clean.
 
-Worth a pass on a narrow window (the toolbar collapses under 640px) and, if the change touches rendering, on a HiDPI screen.
+Worth a pass on a narrow window (under 640px the toolbar sheds a separator and the switcher name truncates, but the switcher itself stays — it is the only way to reach other documents) and, if the change touches rendering, on a HiDPI screen.

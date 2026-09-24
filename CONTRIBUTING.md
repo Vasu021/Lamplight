@@ -14,7 +14,7 @@ Open `index.html` in a browser. That's it — there is no build step and nothing
 
 The whole app is `index.html`. Edit it, reload the browser, and try it against a real PDF.
 
-Before opening a pull request, please walk through the manual checks in [CLAUDE.md](CLAUDE.md#testing): open a PDF by picker and by drag-and-drop, switch between all three themes, zoom in and out, select and copy some text, scroll a long document, and try a file that isn't a PDF.
+Before opening a pull request, please walk through the manual checks in [CLAUDE.md](CLAUDE.md#testing): open a PDF by picker and by drag-and-drop, open several at once and switch between them, close them all and open again, switch between all three themes, zoom in and out, select and copy some text, scroll a long document, and try a file that isn't a PDF.
 
 A few things to keep in mind:
 
@@ -28,6 +28,13 @@ A few things to keep in mind:
 Bug reports are very welcome. The useful details are: your browser and OS, what you did, what you expected, and what happened instead. If a specific PDF misbehaves, say what kind it is — scanned, very large, unusual fonts — and attach it if you can share it.
 
 Ideas and "this felt wrong to read" notes are welcome too. The [roadmap](README.md#roadmap) is where the current ideas live; say so if one of them matters to you.
+
+## Two places state lives
+
+Two things are easy to miss when changing behaviour:
+
+- **Themes are defined twice** — in `PALETTES` and in the CSS custom properties. See below.
+- **`generation` is what cancels stale renders.** Any new `await` on a render path needs a `if (gen !== generation) return;` after it, or pages end up painted in the previous theme. [CLAUDE.md](CLAUDE.md#the-parts-that-matter) has the details.
 
 ## Adding a theme
 

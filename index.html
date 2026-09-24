@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Lamplight – easy-on-the-eyes PDF reader</title>
-<meta name="description" content="Read PDFs in soft, low-glare colours. A single-file, zero-dependency PDF reader with three calm reading themes — and your file never leaves the browser.">
+<meta name="description" content="Read PDFs in soft, low-glare colours. Open several papers at once and switch between them — a single-file, zero-dependency reader, and your files never leave the browser.">
 <link rel="canonical" href="https://vasu021.github.io/Lamplight/">
 <meta name="theme-color" content="#1d2127">
 
@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Lamplight">
 <meta property="og:title" content="Lamplight – easy-on-the-eyes PDF reader">
-<meta property="og:description" content="Lamplight opens any PDF and re-renders it in calm, low-glare colours for comfortable reading, especially academic papers. Smart invert flips lightness while preserving hue, so charts and figures keep their meaning. Text stays selectable. No build step, no upload, no tracking.">
+<meta property="og:description" content="Lamplight opens any PDF and re-renders it in calm, low-glare colours for comfortable reading, especially academic papers. Keep several documents open at once and switch between them from the toolbar. Smart invert flips lightness while preserving hue, so charts and figures keep their meaning. Text stays selectable. No build step, no upload, no tracking.">
 <meta property="og:url" content="https://vasu021.github.io/Lamplight/">
 <meta property="og:image" content="https://vasu021.github.io/Lamplight/docs/screenshot-dusk.png">
 <meta property="og:image:type" content="image/png">
@@ -21,7 +21,7 @@
 <meta property="og:image:alt" content="Lamplight showing an academic paper in the Dusk theme, with a colour bar chart still readable after inversion">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Lamplight – easy-on-the-eyes PDF reader">
-<meta name="twitter:description" content="Read PDFs in soft, low-glare colours. A single-file, zero-dependency PDF reader with three calm reading themes — and your file never leaves the browser.">
+<meta name="twitter:description" content="Read PDFs in soft, low-glare colours. Open several papers at once and switch between them — a single-file, zero-dependency reader, and your files never leave the browser.">
 <meta name="twitter:image" content="https://vasu021.github.io/Lamplight/docs/screenshot-dusk.png">
 <meta name="twitter:image:alt" content="Lamplight showing an academic paper in the Dusk theme, with a colour bar chart still readable after inversion">
 
@@ -35,13 +35,14 @@
   "applicationSubCategory": "PDF reader",
   "operatingSystem": "Any browser",
   "browserRequirements": "Requires JavaScript",
-  "description": "Lamplight opens any PDF and re-renders it in calm, low-glare colours for comfortable reading, especially academic papers. Smart invert flips lightness while preserving hue, so charts and figures keep their meaning. Text stays selectable. No build step, no upload, no tracking.",
+  "description": "Lamplight opens any PDF and re-renders it in calm, low-glare colours for comfortable reading, especially academic papers. Keep several documents open at once and switch between them from the toolbar. Smart invert flips lightness while preserving hue, so charts and figures keep their meaning. Text stays selectable. No build step, no upload, no tracking.",
   "screenshot": "https://vasu021.github.io/Lamplight/docs/screenshot-dusk.png",
   "softwareVersion": "1.0",
   "license": "https://opensource.org/licenses/MIT",
   "isAccessibleForFree": true,
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "featureList": [
+    "Open several PDFs at once and switch between them",
     "Three low-glare reading themes: Dusk, Moss and Parchment",
     "Smart invert that preserves hue so figures stay readable",
     "Selectable, copyable text",
@@ -110,10 +111,12 @@
   .privacy { color: var(--muted); font-size: .85rem; margin-top: 1.4rem; }
   .error { color: #e58f7b; margin-top: 1rem; min-height: 1.5em; font-size: .92rem; }
 
-  /* Reader */
-  .reader { display: none; padding: 28px 12px 110px; }
+  /* Reader: one shelf holds every open document; only one is shown */
+  #shelf { display: none; padding: 28px 12px 110px; }
   body.reading .welcome { display: none; }
-  body.reading .reader { display: block; }
+  body.reading #shelf { display: block; }
+  .doc { display: none; }
+  .doc.open { display: block; }
   .page {
     position: relative; margin: 0 auto 22px; background: var(--surface);
     border-radius: 4px; box-shadow: var(--page-shadow); overflow: hidden;
@@ -159,8 +162,86 @@
   .swatch.dusk { background: linear-gradient(135deg, #1d2127 50%, #dcd8cc 50%); }
   .swatch.moss { background: linear-gradient(135deg, #1b211d 50%, #d3dbc9 50%); }
   .swatch.parchment { background: linear-gradient(135deg, #f3ebd8 50%, #4b3f2f 50%); }
-  .name { max-width: 14em; overflow: hidden; text-overflow: ellipsis; font-size: .82rem; color: var(--muted); padding-left: 8px; }
-  @media (max-width: 640px) { .name, .sep.opt { display: none; } .status { min-width: 4em; } }
+
+  /* Document switcher */
+  .docs-btn {
+    display: flex; align-items: center; gap: 7px; max-width: 15em;
+    background: none; border: 0; height: 34px; padding: 0 10px;
+    border-radius: 999px; cursor: pointer; font-size: .82rem; color: var(--muted);
+  }
+  .docs-btn:hover, .docs-btn[aria-expanded="true"] {
+    background: color-mix(in srgb, var(--ink) 9%, transparent); color: var(--ink);
+  }
+  .docs-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .docs-count {
+    display: none; flex: none; font-size: .7rem; line-height: 1; padding: 3px 6px;
+    border-radius: 999px; background: color-mix(in srgb, var(--lamp) 24%, transparent);
+    color: var(--ink); font-variant-numeric: tabular-nums;
+  }
+  .docs-btn.multi .docs-count { display: inline-block; }
+  .chev { flex: none; width: 9px; height: 6px; opacity: .75; transition: transform .18s ease; }
+  .docs-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+
+  .menu {
+    position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 20;
+    min-width: 266px; max-width: min(380px, calc(100vw - 32px)); padding: 6px;
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 14px 36px rgba(0,0,0,.34);
+  }
+  .menu ul { list-style: none; margin: 0; padding: 0; max-height: 46vh; overflow-y: auto; }
+  .menu-row { display: flex; align-items: center; border-radius: 9px; }
+  .menu-row:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .menu-row.is-open { background: color-mix(in srgb, var(--lamp) 13%, transparent); }
+  .menu-pick {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px;
+    background: none; border: 0; padding: 9px 4px 9px 10px; border-radius: 9px;
+    cursor: pointer; font-size: .86rem; color: var(--ink); text-align: left;
+  }
+  .menu-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: transparent; }
+  .menu-row.is-open .menu-dot { background: var(--lamp); }
+  .menu-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .menu-key { flex: none; font-size: .72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .menu-close {
+    flex: none; width: 30px; height: 30px; margin-right: 4px; border: 0; border-radius: 50%;
+    background: none; cursor: pointer; color: var(--muted); font-size: 1.1rem; line-height: 1;
+  }
+  .menu-close:hover { background: color-mix(in srgb, var(--ink) 12%, transparent); color: var(--ink); }
+  .menu-add {
+    display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 4px; padding: 10px;
+    background: none; border: 0; border-top: 1px solid var(--line);
+    cursor: pointer; color: var(--lamp); font-size: .86rem; text-align: left;
+  }
+  .menu-add:hover { background: color-mix(in srgb, var(--lamp) 10%, transparent); border-radius: 0 0 9px 9px; }
+
+  /* Errors raised while reading, where the welcome screen isn't visible */
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%); z-index: 30;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+    max-width: min(30rem, calc(100vw - 32px)); margin: 0; padding: 10px 16px;
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--line); border-radius: 999px;
+    color: #e58f7b; font-size: .86rem; text-align: center;
+    box-shadow: 0 10px 28px rgba(0,0,0,.3);
+  }
+
+  /* The toolbar sheds what the switcher menu can do instead, never the switcher
+     itself: with several documents open it is the only way to reach the others. */
+  @media (max-width: 640px) {
+    .sep.opt, .sep-open, #openAnother { display: none; }
+    .docs-btn { max-width: 8em; }
+    .status { min-width: 4em; }
+    .menu { left: 50%; transform: translateX(-50%); width: calc(100vw - 32px); min-width: 0; }
+  }
+  @media (max-width: 460px) {
+    .docs-name { display: none; }
+    .docs-btn { max-width: none; padding: 0 8px; }
+    .docs-btn .docs-count { display: inline-block; }
+    .status { min-width: 3.4em; padding: 0 4px; }
+    .bar-inner { gap: 2px; }
+  }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -171,20 +252,27 @@
       <h1>Read PDFs in soft light</h1>
       <p class="lede">Open a paper and it's redrawn in calm, low-glare colours. Figures keep their colours and text stays selectable.</p>
       <label class="drop" for="file">
-        <strong>Choose a PDF</strong> or drop it here
-        <small>Works best with papers, reports and books</small>
+        <strong>Choose PDFs</strong> or drop them here
+        <small>Open as many as you like and switch between them</small>
       </label>
-      <input type="file" id="file" accept="application/pdf,.pdf" hidden>
+      <input type="file" id="file" accept="application/pdf,.pdf" multiple hidden>
       <p class="privacy">Your file is opened in this browser tab and never uploaded anywhere.</p>
       <p class="error" id="error" role="alert"></p>
     </div>
   </main>
 
-  <section class="reader" id="reader" aria-label="Document"></section>
+  <div id="shelf"></div>
 
   <nav class="bar" aria-label="Reading controls">
     <div class="bar-inner">
-      <span class="name" id="name"></span>
+      <button class="docs-btn" id="docsBtn" type="button"
+              aria-haspopup="true" aria-expanded="false" aria-controls="docsMenu">
+        <span class="docs-name" id="docsName"></span>
+        <span class="docs-count" id="docsCount"></span>
+        <svg class="chev" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 5l4-4 4 4"
+          fill="none" stroke="currentColor" stroke-width="1.6"
+          stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
       <span class="sep opt"></span>
       <button class="btn" id="zoomOut" aria-label="Zoom out">−</button>
       <span class="status" id="zoomLabel">100%</span>
@@ -195,10 +283,19 @@
       <button class="swatch dusk" data-theme="dusk" aria-label="Dusk colours" aria-pressed="true"></button>
       <button class="swatch moss" data-theme="moss" aria-label="Moss colours" aria-pressed="false"></button>
       <button class="swatch parchment" data-theme="parchment" aria-label="Parchment colours" aria-pressed="false"></button>
-      <span class="sep"></span>
+      <span class="sep sep-open"></span>
       <button class="btn" id="openAnother">Open</button>
     </div>
+
+    <div class="menu" id="docsMenu" role="menu" aria-label="Open documents" hidden>
+      <ul id="docsList"></ul>
+      <button class="menu-add" id="menuAdd" type="button" role="menuitem">
+        <span aria-hidden="true">+</span> Open a PDF&hellip;
+      </button>
+    </div>
   </nav>
+
+  <p class="toast" id="toast" role="alert" hidden></p>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
@@ -214,16 +311,25 @@
   };
 
   const $ = id => document.getElementById(id);
-  const fileInput = $("file"), reader = $("reader"), errorEl = $("error");
+  const fileInput = $("file"), shelf = $("shelf"), errorEl = $("error");
+  const docsBtn = $("docsBtn"), docsMenu = $("docsMenu"), docsList = $("docsList");
   const store = {
     get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} }
   };
 
-  let pdf = null, pages = [], zoom = parseFloat(store.get("lamplight-zoom", "1")) || 1;
+  // Every open document lives in `docs`; one of them is active at a time.
+  //   { id, name, file, pdf, pages, el, scrollY, laidOut, observer }
+  // and each entry of `pages` is { page, el, gen } where `gen` is the render
+  // generation its canvas was painted at. Theme, zoom and resize all bump the
+  // generation, which is what marks every page of every document as stale.
+  let docs = [], activeId = null, nextId = 1;
+  let zoom = parseFloat(store.get("lamplight-zoom", "1")) || 1;
   let theme = store.get("lamplight-theme", "dusk");
   if (!PALETTES[theme]) theme = "dusk";
-  let generation = 0, observer = null;
+  let generation = 0, toastTimer = null;
+
+  const active = () => docs.find(d => d.id === activeId) || null;
 
   function applyTheme() {
     document.documentElement.dataset.reading = theme;
@@ -254,15 +360,17 @@
     ctx.putImageData(img, 0, 0);
   }
 
+  // Measured on the shelf, not the document, so a hidden document still sizes
+  // correctly when it is switched to.
   function baseScale(page) {
     const vp = page.getViewport({ scale: 1 });
-    const avail = Math.min(reader.clientWidth - 24, 900);
+    const avail = Math.min(shelf.clientWidth - 24, 900);
     return Math.max(avail / vp.width, 0.3);
   }
 
-  async function renderPage(entry) {
+  async function renderPage(doc, entry) {
     const gen = generation;
-    entry.rendered = true;
+    entry.gen = gen;
     const { page, el } = entry;
     const scale = baseScale(page) * zoom;
     const vp = page.getViewport({ scale });
@@ -274,7 +382,7 @@
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     try {
       await page.render({ canvasContext: ctx, viewport: vp, transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null }).promise;
-    } catch { entry.rendered = false; return; }
+    } catch { entry.gen = -1; return; }
     if (gen !== generation) return;
     recolour(ctx, canvas.width, canvas.height);
 
@@ -291,104 +399,279 @@
     el.prepend(canvas);
   }
 
-  function layout() {
-    generation++;
-    if (observer) observer.disconnect();
-    observer = new IntersectionObserver(items => {
+  // Size one document's pages and watch them. Each document keeps its own
+  // observer so switching away simply stops that document rendering.
+  function layoutDoc(doc) {
+    doc.laidOut = true;
+    if (doc.observer) doc.observer.disconnect();
+    doc.observer = new IntersectionObserver(items => {
       for (const it of items) {
-        const entry = pages[+it.target.dataset.index];
-        if (it.isIntersecting && !entry.rendered) renderPage(entry);
+        const entry = doc.pages[+it.target.dataset.index];
+        if (it.isIntersecting && entry.gen !== generation) renderPage(doc, entry);
       }
     }, { rootMargin: "900px 0px" });
 
-    for (const entry of pages) {
+    for (const entry of doc.pages) {
       const vp = entry.page.getViewport({ scale: baseScale(entry.page) * zoom });
       entry.el.style.width = vp.width + "px";
       entry.el.style.aspectRatio = `${vp.width} / ${vp.height}`;
-      entry.rendered = false;
-      observer.observe(entry.el);
+      doc.observer.observe(entry.el);
     }
-    $("zoomLabel").textContent = Math.round(zoom * 100) + "%";
   }
 
-  async function openFile(file) {
-    errorEl.textContent = "";
-    if (!file) return;
-    if (file.type !== "application/pdf" && !/\.pdf$/i.test(file.name)) {
-      errorEl.textContent = "That file isn't a PDF. Choose a file ending in .pdf.";
-      return;
+  // Theme, zoom or width changed: every page everywhere is now stale.
+  function invalidate() {
+    generation++;
+    for (const d of docs) d.laidOut = false;
+    const doc = active();
+    if (doc) {
+      const anchor = currentPage();
+      layoutDoc(doc);
+      doc.pages[anchor]?.el.scrollIntoView({ block: "start" });
     }
+    updateChrome();
+  }
+
+  function notify(msg) {
+    if (!docs.length) { errorEl.textContent = msg; return; }
+    const t = $("toast");
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 6000);
+  }
+
+  async function openOne(file) {
+    if (file.type !== "application/pdf" && !/\.pdf$/i.test(file.name)) {
+      throw new Error(`“${file.name}” isn’t a PDF.`);
+    }
+    // Already open? Just go to it rather than loading a second copy.
+    const twin = docs.find(d => d.file.name === file.name && d.file.size === file.size);
+    if (twin) return twin;
+
+    let pdf;
     try {
       const data = new Uint8Array(await file.arrayBuffer());
-      const doc = await pdfjsLib.getDocument({ data }).promise;
-      if (pdf) pdf.destroy();
-      pdf = doc;
+      pdf = await pdfjsLib.getDocument({ data }).promise;
     } catch (e) {
-      errorEl.textContent = e && e.name === "PasswordException"
-        ? "This PDF is password-protected. Remove the password and try again."
-        : "This PDF couldn't be opened. It may be damaged; try another copy.";
-      return;
+      throw new Error(e && e.name === "PasswordException"
+        ? `“${file.name}” is password-protected. Remove the password and try again.`
+        : `“${file.name}” couldn’t be opened. It may be damaged; try another copy.`);
     }
-    reader.innerHTML = "";
-    pages = [];
+
+    const el = document.createElement("section");
+    el.className = "doc";
+    el.setAttribute("aria-label", file.name);
+    const doc = { id: nextId++, name: file.name.replace(/\.pdf$/i, ""), file, pdf,
+                  pages: [], el, scrollY: 0, laidOut: false, observer: null };
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
-      const el = document.createElement("div");
-      el.className = "page";
-      el.dataset.index = i - 1;
-      el.innerHTML = `<span class="num">${i}</span>`;
-      reader.appendChild(el);
-      pages.push({ page, el, rendered: false });
+      const pageEl = document.createElement("div");
+      pageEl.className = "page";
+      pageEl.dataset.index = i - 1;
+      pageEl.innerHTML = `<span class="num">${i}</span>`;
+      el.appendChild(pageEl);
+      doc.pages.push({ page, el: pageEl, gen: -1 });
     }
-    $("name").textContent = file.name.replace(/\.pdf$/i, "");
-    document.title = file.name + " – Lamplight";
-    document.body.classList.add("reading");
-    window.scrollTo(0, 0);
-    layout();
+    shelf.appendChild(el);
+    docs.push(doc);
+    return doc;
+  }
+
+  async function openFiles(list) {
+    const files = [...(list || [])];
+    if (!files.length) return;
+    if (!docs.length) errorEl.textContent = "";
+
+    const problems = [];
+    let first = null;
+    for (const file of files) {
+      try {
+        const doc = await openOne(file);
+        if (!first) first = doc;
+      } catch (e) { problems.push(e.message); }
+    }
+    if (first) {
+      document.body.classList.add("reading");
+      switchTo(first.id);
+    }
+    renderList();
+    if (problems.length) {
+      notify(problems.length === 1 ? problems[0]
+        : `${problems.length} files couldn’t be opened. ${problems[0]}`);
+    }
+  }
+
+  function switchTo(id) {
+    const cur = active();
+    if (cur && cur.id !== id) cur.scrollY = window.scrollY;
+    activeId = id;
+    for (const d of docs) d.el.classList.toggle("open", d.id === id);
+    const doc = active();
+    if (!doc) return;
+    if (!doc.laidOut) layoutDoc(doc);
+    window.scrollTo(0, doc.scrollY || 0);
+    document.title = doc.file.name + " – Lamplight";
+    updateChrome();
+  }
+
+  function closeDoc(id) {
+    const i = docs.findIndex(d => d.id === id);
+    if (i < 0) return;
+    const [doc] = docs.splice(i, 1);
+    if (doc.observer) doc.observer.disconnect();
+    doc.el.remove();
+    try { doc.pdf.destroy(); } catch {}
+
+    if (activeId === id) {
+      activeId = null;
+      const next = docs[i] || docs[i - 1];
+      if (next) {
+        switchTo(next.id);
+      } else {
+        document.body.classList.remove("reading");
+        document.title = "Lamplight – easy-on-the-eyes PDF reader";
+        closeMenu();
+      }
+    }
+    renderList();
+    updateChrome();
+  }
+
+  // Switcher menu
+  function renderList() {
+    docsList.innerHTML = "";
+    docs.forEach((d, i) => {
+      const row = document.createElement("li");
+      row.className = "menu-row" + (d.id === activeId ? " is-open" : "");
+
+      const pick = document.createElement("button");
+      pick.type = "button";
+      pick.className = "menu-pick";
+      pick.setAttribute("role", "menuitemradio");
+      pick.setAttribute("aria-checked", String(d.id === activeId));
+      pick.innerHTML = `<span class="menu-dot" aria-hidden="true"></span>
+        <span class="menu-name"></span>
+        <span class="menu-key" aria-hidden="true">${i < 9 ? "&#8997;" + (i + 1) : ""}</span>`;
+      pick.querySelector(".menu-name").textContent = d.name;
+      pick.addEventListener("click", () => { switchTo(d.id); closeMenu(true); });
+
+      const shut = document.createElement("button");
+      shut.type = "button";
+      shut.className = "menu-close";
+      shut.setAttribute("aria-label", `Close ${d.name}`);
+      shut.innerHTML = "&times;";
+      shut.addEventListener("click", e => {
+        e.stopPropagation();
+        closeDoc(d.id);
+        if (docs.length) docsMenu.querySelector("button")?.focus();
+      });
+
+      row.append(pick, shut);
+      docsList.appendChild(row);
+    });
+  }
+
+  const menuIsOpen = () => !docsMenu.hidden;
+
+  function openMenu() {
+    renderList();
+    docsMenu.hidden = false;
+    docsBtn.setAttribute("aria-expanded", "true");
+    docsMenu.querySelector("button")?.focus();
+  }
+
+  function closeMenu(focusTrigger) {
+    docsMenu.hidden = true;
+    docsBtn.setAttribute("aria-expanded", "false");
+    if (focusTrigger) docsBtn.focus();
+  }
+
+  function updateChrome() {
+    const doc = active();
+    $("docsName").textContent = doc ? doc.name : "";
+    $("docsCount").textContent = String(docs.length);
+    docsBtn.classList.toggle("multi", docs.length > 1);
+    docsBtn.setAttribute("aria-label", docs.length > 1
+      ? `${doc ? doc.name : "Documents"} — ${docs.length} open, switch document`
+      : (doc ? doc.name : "Documents"));
+    $("zoomLabel").textContent = Math.round(zoom * 100) + "%";
     updatePageLabel();
   }
 
-  function rerenderAll() {
-    const anchor = currentPage();
-    layout();
-    pages[anchor]?.el.scrollIntoView({ block: "start" });
-  }
-
   function currentPage() {
+    const doc = active();
+    if (!doc) return 0;
     const mid = window.innerHeight / 3;
     let idx = 0;
-    pages.forEach((p, i) => { if (p.el.getBoundingClientRect().top < mid) idx = i; });
+    doc.pages.forEach((p, i) => { if (p.el.getBoundingClientRect().top < mid) idx = i; });
     return idx;
   }
+
   function updatePageLabel() {
-    if (pages.length) $("pageLabel").textContent = `${currentPage() + 1} / ${pages.length}`;
+    const doc = active();
+    if (doc && doc.pages.length) $("pageLabel").textContent = `${currentPage() + 1} / ${doc.pages.length}`;
   }
 
   function setZoom(z) {
     zoom = Math.min(3, Math.max(0.5, Math.round(z * 10) / 10));
     store.set("lamplight-zoom", zoom);
-    rerenderAll();
+    invalidate();
+  }
+
+  function step(delta) {
+    if (docs.length < 2) return;
+    const i = docs.findIndex(d => d.id === activeId);
+    switchTo(docs[(i + delta + docs.length) % docs.length].id);
   }
 
   // Events
-  fileInput.addEventListener("change", () => { openFile(fileInput.files[0]); fileInput.value = ""; });
+  fileInput.addEventListener("change", () => { openFiles(fileInput.files); fileInput.value = ""; });
   $("openAnother").addEventListener("click", () => fileInput.click());
+  $("menuAdd").addEventListener("click", () => { closeMenu(); fileInput.click(); });
+  docsBtn.addEventListener("click", () => menuIsOpen() ? closeMenu(true) : openMenu());
   $("zoomIn").addEventListener("click", () => setZoom(zoom + 0.1));
   $("zoomOut").addEventListener("click", () => setZoom(zoom - 0.1));
   document.querySelectorAll(".swatch").forEach(s => s.addEventListener("click", () => {
     theme = s.dataset.theme; store.set("lamplight-theme", theme);
-    applyTheme(); rerenderAll();
+    applyTheme(); invalidate();
   }));
+
+  document.addEventListener("click", e => {
+    if (menuIsOpen() && !docsMenu.contains(e.target) && !docsBtn.contains(e.target)) closeMenu();
+  });
+
+  docsMenu.addEventListener("keydown", e => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const items = [...docsMenu.querySelectorAll("button")];
+    const i = items.indexOf(document.activeElement);
+    items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length].focus();
+  });
+
   window.addEventListener("scroll", () => requestAnimationFrame(updatePageLabel), { passive: true });
   let resizeTimer;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => pages.length && rerenderAll(), 250);
+    resizeTimer = setTimeout(() => docs.length && invalidate(), 250);
   });
+
   window.addEventListener("keydown", e => {
-    if (!pages.length || e.target.closest("input")) return;
+    if (e.key === "Escape" && menuIsOpen()) { closeMenu(true); return; }
+    if (!docs.length || (e.target.closest && e.target.closest("input"))) return;
     if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+")) { e.preventDefault(); setZoom(zoom + 0.1); }
     if ((e.ctrlKey || e.metaKey) && e.key === "-") { e.preventDefault(); setZoom(zoom - 0.1); }
+    // Alt-based, because Ctrl/Cmd+Tab and Ctrl/Cmd+W belong to the browser.
+    // Keyed on e.code: Alt+1 does not produce "1" on every keyboard layout.
+    if (e.altKey && !e.ctrlKey && !e.metaKey) {
+      const digit = /^Digit([1-9])$/.exec(e.code);
+      if (digit) {
+        const doc = docs[+digit[1] - 1];
+        if (doc) { e.preventDefault(); switchTo(doc.id); }
+      }
+      if (e.code === "ArrowRight" || e.code === "BracketRight") { e.preventDefault(); step(1); }
+      if (e.code === "ArrowLeft" || e.code === "BracketLeft") { e.preventDefault(); step(-1); }
+    }
   });
 
   ["dragenter", "dragover"].forEach(t => window.addEventListener(t, e => {
@@ -398,7 +681,7 @@
     e.preventDefault();
     if (t === "drop" || e.relatedTarget === null) document.body.classList.remove("dragging");
   }));
-  window.addEventListener("drop", e => openFile(e.dataTransfer.files[0]));
+  window.addEventListener("drop", e => openFiles(e.dataTransfer.files));
 })();
 </script>
 </body>

@@ -13,19 +13,24 @@
 | ![Dusk theme](docs/screenshot-dusk.png) | ![Moss theme](docs/screenshot-moss.png) | ![Parchment theme](docs/screenshot-parchment.png) |
 | Slate charcoal | Dark green-grey | Warm sepia |
 
+Open as many papers as you like and switch between them from the toolbar:
+
+![The document switcher, listing three open papers](docs/screenshot-switcher.png)
+
 ## Why
 
 Reading white-background PDFs on a screen — in a viewer, in VS Code, anywhere — is a small floodlight pointed at your face, and after a few papers it shows. Lamplight opens a PDF locally and re-renders every page in a quieter palette, so a long reading session stops being a squinting match. Figures keep their colours and the text stays selectable, so nothing is lost in the trade.
 
 ## Features
 
-- **Open anything** — file picker, or drop a PDF anywhere on the page.
+- **Open anything** — file picker, or drop PDFs anywhere on the page.
+- **Many documents at once** — open a stack of papers and switch between them from the toolbar. Each one remembers where you were reading.
 - **Three reading themes** — Dusk (slate charcoal), Moss (dark green-grey), Parchment (warm sepia).
 - **Smart invert** — on dark themes, lightness is flipped but hue is preserved, so a blue bar in a chart stays blue.
 - **Text stays text** — selectable and copyable via the pdf.js text layer, with a theme-coloured selection highlight.
 - **Fast on long documents** — pages render lazily as you scroll, sharp on HiDPI screens.
 - **Zoom 50–300%** — from the toolbar or with <kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>+</kbd> and <kbd>−</kbd>, with a live page counter.
-- **Remembers you** — theme and zoom persist between visits.
+- **Remembers you** — theme and zoom persist between visits; scroll position persists per document.
 - **Private by design** — the file is read in your browser and never uploaded anywhere.
 - **Considerate** — friendly errors, visible keyboard focus, responsive layout, respects `prefers-reduced-motion`.
 
@@ -35,7 +40,9 @@ Reading white-background PDFs on a screen — in a viewer, in VS Code, anywhere 
 
 **Locally:** download `index.html` and open it in your browser. That's the whole install — there is nothing to build and nothing to `npm install`.
 
-Then choose a PDF or drag one onto the window, and pick a theme from the toolbar at the bottom.
+Then choose a PDF or drag one onto the window — drop several at once if you like — and pick a theme from the toolbar at the bottom.
+
+With more than one document open, the filename on the left of the toolbar becomes a switcher: it shows how many are open, and clicking it lists them. Pick one to jump to it, press <kbd>×</kbd> to close it, or **Open a PDF…** to add another. Opening a file you already have open just takes you back to it rather than loading a second copy.
 
 ### Keyboard shortcuts
 
@@ -43,8 +50,13 @@ Then choose a PDF or drag one onto the window, and pick a theme from the toolbar
 | :--- | :--- |
 | <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>+</kbd> | Zoom in |
 | <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>−</kbd> | Zoom out |
+| <kbd>Alt</kbd>/<kbd>⌥</kbd> + <kbd>1</kbd>…<kbd>9</kbd> | Jump to the *n*th open document |
+| <kbd>Alt</kbd>/<kbd>⌥</kbd> + <kbd>←</kbd> <kbd>→</kbd> | Previous / next document (wraps) |
+| <kbd>Esc</kbd> | Close the document switcher |
 | <kbd>Tab</kbd> | Move through the toolbar controls |
 | <kbd>Space</kbd>, <kbd>↑</kbd> <kbd>↓</kbd>, <kbd>Page Up/Down</kbd> | Scroll the document (ordinary browser scrolling) |
+
+The document shortcuts use <kbd>Alt</kbd>/<kbd>⌥</kbd> rather than <kbd>Ctrl</kbd>/<kbd>⌘</kbd> because <kbd>⌘</kbd><kbd>Tab</kbd> and <kbd>⌘</kbd><kbd>W</kbd> belong to the browser and the operating system.
 
 ## How it works
 
@@ -60,6 +72,8 @@ and adds `k` to all three channels. That flips lightness while leaving the relat
 
 Pages are observed with an `IntersectionObserver` and rendered just before they scroll into view, at `devicePixelRatio` (capped at 2.5) for crispness, and fit to the window width up to 900px.
 
+Every open document keeps its own page list, observer and scroll position; only the active one is in the layout, so the documents you aren't reading cost nothing to keep around. Changing theme or zoom marks all of them stale at once, and each re-renders lazily the next time you look at it.
+
 ## Privacy
 
 Your PDF never leaves your machine. It is read with the browser's `File` API, decoded in the tab, and drawn to a canvas — there is no server, no upload, no analytics. The only network requests Lamplight makes are for pdf.js and the Literata font, both from public CDNs, the first time you load the page.
@@ -69,13 +83,14 @@ Your PDF never leaves your machine. It is read with the browser's `File` API, de
 - Scanned (image-only) PDFs have no selectable text — they recolour fine, but there is nothing to select.
 - Very large PDFs recolour page by page as you scroll, so expect a brief pause on each new page.
 - The first load needs an internet connection to fetch pdf.js and the font.
+- Open documents live in memory for the session. A dozen large PDFs at once will use a lot of it, and closing a document is what gives it back.
 
 ## Roadmap
 
-- Remember the last-read page per document
 - Custom theme colours
 - Offline / PWA support
-- Search within the document
+- Search within the document, and across open documents
+- Reopen the last session's documents
 
 ## Contributing
 
