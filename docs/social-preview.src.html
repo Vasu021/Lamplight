@@ -1,0 +1,56 @@
+<!-- Source for social-preview.png. Open in a browser at exactly
+     1280x640 and screenshot, or see docs/README.md. -->
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1280px; height: 640px; overflow: hidden;
+         background: #1d2127; color: #dcd8cc;
+         font-family: "Literata", Georgia, serif; }
+  .card { position: relative; width: 1280px; height: 640px; overflow: hidden; }
+
+  /* the app window, peeking in from the bottom right */
+  .shot { position: absolute; z-index: 1; left: 578px; top: 150px; width: 860px;
+          border: 1px solid #3f4650; border-top-left-radius: 14px;
+          box-shadow: -26px -12px 70px rgba(0,0,0,.55); overflow: hidden; }
+  .shot img { display: block; width: 100%; opacity: .95; }
+
+  /* warm lamp wash over everything, so the glow stays continuous */
+  .wash { position: absolute; z-index: 2; left: -220px; top: -300px; width: 1060px; height: 1060px;
+          background: radial-gradient(circle at 50% 50%,
+            rgba(224,181,106,.15) 0%, rgba(224,181,106,.06) 36%, transparent 68%); }
+
+  .left { position: relative; z-index: 3; padding: 0 0 0 80px;
+          height: 640px; display: flex; flex-direction: column; justify-content: center; }
+  .glow { width: 62px; height: 62px; margin-bottom: 26px; border-radius: 50%;
+          background: radial-gradient(circle at 50% 45%, #e0b56a 0 17%,
+            rgba(224,181,106,.34) 38%, transparent 70%); }
+  h1 { font-size: 72px; font-weight: 500; letter-spacing: -.022em; line-height: 1; margin-bottom: 18px; }
+  .tag { font-size: 26px; font-weight: 400; line-height: 1.42; color: #c6c2b7;
+         margin-bottom: 30px; max-width: 472px; }
+  .tag b { color: #e0b56a; font-weight: 500; }
+  .meta { display: flex; align-items: center; gap: 11px; font-size: 16px; color: #949aa2; }
+  .sw { width: 17px; height: 17px; border-radius: 50%; display: inline-block; }
+  .sw.d { background: linear-gradient(135deg, #1d2127 50%, #dcd8cc 50%); box-shadow: 0 0 0 1.5px #4d545f; }
+  .sw.m { background: linear-gradient(135deg, #1b211d 50%, #d3dbc9 50%); box-shadow: 0 0 0 1.5px #4d545f; }
+  .sw.p { background: linear-gradient(135deg, #f3ebd8 50%, #4b3f2f 50%); box-shadow: 0 0 0 1.5px #4d545f; }
+  .dot { color: #545b65; }
+</style></head><body>
+<div class="card">
+  <div class="shot"><img src="screenshot-dusk.png"></div>
+  <div class="wash"></div>
+  <div class="left">
+    <div class="glow"></div>
+    <h1>Lamplight</h1>
+    <p class="tag">Read PDFs in soft light. Dark mode that keeps your <b>figures readable</b>.</p>
+    <div class="meta">
+      <span class="sw d"></span><span class="sw m"></span><span class="sw p"></span>
+      <span>Three themes</span><span class="dot">&middot;</span>
+      <span>No build step</span><span class="dot">&middot;</span>
+      <span>Never uploaded</span>
+    </div>
+  </div>
+</div>
+</body></html>
