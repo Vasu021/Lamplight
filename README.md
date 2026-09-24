@@ -50,7 +50,7 @@ Then choose a PDF or drag one onto the window — drop several at once if you li
 
 **Your shelf** at the foot of the switcher takes you back to the front page at any time, without closing anything — the documents stay loaded, so stepping back in puts you exactly where you were. A lamp-coloured dot marks the ones still open.
 
-Everything you open goes on **your shelf**, which is waiting on the front page next time you visit — each document with the page you reached and a line showing how far in you are. Click one to carry on where you stopped, or press its **×** to remove it. Nothing is opened for you automatically; the shelf is a list to choose from, not a session to restore.
+Everything you open goes on **your shelf**, which is waiting on the front page next time you visit — each document with the page you reached and a line showing how far in you are. Click one to carry on where you stopped, or press its **×** to remove it. The list keeps to a fixed height and scrolls once it fills, so forty papers leave the front page as short as three do. Nothing is opened for you automatically; the shelf is a list to choose from, not a session to restore.
 
 To go straight to a page, click the page counter in the middle of the toolbar, type the number and press <kbd>Enter</kbd> — numbers outside the document are clamped to its first or last page, so a mistyped 999 lands on the end rather than doing nothing.
 

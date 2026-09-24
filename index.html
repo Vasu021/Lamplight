@@ -122,7 +122,22 @@
     color: var(--muted); margin: 0;
   }
   .shelf-size { font-size: .74rem; color: var(--muted); opacity: .8; font-variant-numeric: tabular-nums; }
-  .shelf ul { list-style: none; margin: 0; padding: 0; }
+  .shelf ul {
+    list-style: none; margin: 0; padding: 0;
+    /* about four and a half rows: the half row is the cue that there is more */
+    max-height: 21.5rem; overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--ink) 24%, transparent) transparent;
+  }
+  .shelf ul::-webkit-scrollbar { width: 9px; }
+  .shelf ul::-webkit-scrollbar-track { background: transparent; }
+  .shelf ul::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--ink) 22%, transparent);
+    border: 2px solid transparent; background-clip: padding-box; border-radius: 999px;
+  }
+  .shelf ul::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--ink) 38%, transparent); background-clip: padding-box;
+  }
   .shelf li { display: flex; align-items: center; gap: 6px; border-top: 1px solid var(--line); }
   .shelf li:last-child { border-bottom: 1px solid var(--line); }
   .shelf-open {
@@ -498,6 +513,9 @@
   function rememberPage(now) {
     const doc = active();
     if (!doc || !doc.shelfId) return;
+    // Off the reader there is nothing to measure, and the position saved on the
+    // way out is already correct. Writing here would overwrite it with a guess.
+    if (!document.body.classList.contains("reading")) return;
     // Read the position synchronously: by the time the write resolves the
     // reader may have switched documents, and currentPage() would then be
     // measuring the wrong one.
@@ -753,7 +771,8 @@
   function renderShelf() {
     shelfEl.hidden = shelved.length === 0;
     shelfSize.textContent = shelved.length
-      ? fmtSize(shelved.reduce((n, it) => n + (it.size || 0), 0)) + " kept here"
+      ? shelved.length + (shelved.length === 1 ? " document \u00b7 " : " documents \u00b7 ")
+        + fmtSize(shelved.reduce((n, it) => n + (it.size || 0), 0))
       : "";
     shelfList.innerHTML = "";
     for (const it of shelved) {
@@ -916,7 +935,13 @@
     if (!doc) return 0;
     const mid = window.innerHeight / 3;
     let idx = 0;
-    doc.pages.forEach((p, i) => { if (p.el.getBoundingClientRect().top < mid) idx = i; });
+    doc.pages.forEach((p, i) => {
+      // A hidden document is a stack of zero-height boxes, all sitting at
+      // top: 0. Without the height check every one of them satisfies the test
+      // below and the last page wins, which reads as "finished".
+      const box = p.el.getBoundingClientRect();
+      if (box.height && box.top < mid) idx = i;
+    });
     return idx;
   }
 

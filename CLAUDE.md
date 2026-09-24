@@ -43,8 +43,10 @@ Rules worth keeping:
 
 - **Every call is non-fatal.** Private browsing, a denied quota, a blocked upgrade — all of it degrades to "the shelf stays empty and reading still works". `remember()` warns once per session, never per file.
 - **`rememberPage` reads the page synchronously**, before its `await`. It used to compute `currentPage()` inside the async write, which meant switching documents saved the *new* document's position onto the old one's record.
+- **`rememberPage` refuses to write unless `body.reading` is set, and `currentPage()` skips zero-height pages.** A hidden document measures as a stack of empty boxes all at `top: 0`, so every page satisfies the "above the fold" test and the last one wins — which is why reloading from the landing page used to mark the last-read document 100% finished.
 - **Nothing is opened automatically on load.** The shelf is a list to choose from; auto-restoring several large PDFs would make the first paint cost seconds for something the reader may not want.
 - **Progress is `(page - 1) / (pages - 1)`**, so page 1 reads as 0% rather than `1/pages`.
+- **The list is capped at `21.5rem` and scrolls inside itself**, about four and a half rows. The half row is deliberate: it is the cue that there is more. Without the cap a reader with forty documents gets a front page forty rows tall.
 - `refreshShelf()` reloads the cached `shelved` array and redraws both the landing list and the switcher menu. Call it after anything that adds, removes or reopens.
 
 ## The parts that matter
