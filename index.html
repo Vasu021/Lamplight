@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lamplight – easy-on-the-eyes PDF reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1d2127;
+    --surface: #262b33;
+    --ink: #dcd8cc;
+    --muted: #8e939b;
+    --lamp: #e0b56a;
+    --line: #353b45;
+    --page-shadow: 0 1px 0 rgba(255,255,255,.03), 0 12px 32px rgba(0,0,0,.35);
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-reading="parchment"] {
+    --bg: #e9e0cb; --surface: #f3ebd8; --ink: #4b3f2f; --muted: #857761;
+    --lamp: #9a6b2a; --line: #d6c9ab;
+    --page-shadow: 0 1px 0 rgba(255,255,255,.4), 0 10px 26px rgba(90,70,40,.18);
+  }
+  :root[data-reading="moss"] {
+    --bg: #1b211d; --surface: #242c27; --ink: #d3dbc9; --muted: #8b9788;
+    --lamp: #c9c27a; --line: #323b35;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html, body { height: 100%; margin: 0; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Literata", Georgia, "Times New Roman", serif;
+    font-size: 17px; line-height: 1.55;
+    transition: background-color .3s ease, color .3s ease;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--lamp); outline-offset: 3px; border-radius: 6px; }
+
+  /* Empty state */
+  .welcome {
+    min-height: 100%; display: grid; place-items: center; padding: 32px 20px;
+  }
+  .welcome-inner { max-width: 30rem; text-align: center; }
+  .glow {
+    width: 88px; height: 88px; margin: 0 auto 28px; border-radius: 50%;
+    background: radial-gradient(circle at 50% 45%, var(--lamp) 0 18%, color-mix(in srgb, var(--lamp) 35%, transparent) 38%, transparent 70%);
+    filter: blur(.3px);
+  }
+  h1 { font-size: 2.1rem; font-weight: 500; line-height: 1.2; margin: 0 0 .6rem; letter-spacing: -.01em; }
+  .lede { color: var(--muted); margin: 0 0 2rem; }
+  .drop {
+    display: block; border: 1.5px dashed var(--line); border-radius: 14px;
+    padding: 28px 20px; cursor: pointer; transition: border-color .2s, background-color .2s;
+  }
+  .drop:hover, body.dragging .drop { border-color: var(--lamp); background: color-mix(in srgb, var(--lamp) 7%, transparent); }
+  .drop strong { color: var(--lamp); font-weight: 600; }
+  .drop small { display: block; color: var(--muted); margin-top: .35rem; font-size: .85rem; }
+  .privacy { color: var(--muted); font-size: .85rem; margin-top: 1.4rem; }
+  .error { color: #e58f7b; margin-top: 1rem; min-height: 1.5em; font-size: .92rem; }
+
+  /* Reader */
+  .reader { display: none; padding: 28px 12px 110px; }
+  body.reading .welcome { display: none; }
+  body.reading .reader { display: block; }
+  .page {
+    position: relative; margin: 0 auto 22px; background: var(--surface);
+    border-radius: 4px; box-shadow: var(--page-shadow); overflow: hidden;
+    max-width: 100%;
+  }
+  .page canvas { display: block; width: 100%; height: 100%; }
+  .page .num {
+    position: absolute; right: 10px; bottom: 8px; font-size: .75rem; color: var(--muted); opacity: .6; pointer-events: none;
+  }
+
+  /* pdf.js text layer (makes text selectable) */
+  .textLayer { position: absolute; inset: 0; overflow: hidden; line-height: 1; text-size-adjust: none; forced-color-adjust: none; transform-origin: 0 0; z-index: 2; }
+  .textLayer span, .textLayer br { color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%; }
+  .textLayer ::selection { background: color-mix(in srgb, var(--lamp) 45%, transparent); }
+  .textLayer .endOfContent { display: block; position: absolute; inset: 100% 0 0; z-index: -1; cursor: default; user-select: none; }
+
+  /* Toolbar */
+  .bar {
+    position: fixed; left: 50%; bottom: 0; transform: translateX(-50%);
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    display: none; z-index: 10;
+  }
+  body.reading .bar { display: block; }
+  .bar-inner {
+    display: flex; align-items: center; gap: 4px; padding: 6px 8px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--line); border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25); white-space: nowrap;
+  }
+  .btn {
+    background: none; border: 0; height: 34px; min-width: 34px; padding: 0 10px;
+    border-radius: 999px; cursor: pointer; font-size: .9rem; color: var(--ink);
+  }
+  .btn:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
+  .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+  .status { font-size: .82rem; color: var(--muted); padding: 0 8px; min-width: 5.5em; text-align: center; font-variant-numeric: tabular-nums; }
+  .swatch {
+    width: 22px; height: 22px; min-width: 22px; padding: 0; border-radius: 50%;
+    border: 2px solid transparent; cursor: pointer; margin: 0 2px;
+  }
+  .swatch[aria-pressed="true"] { border-color: var(--lamp); }
+  .swatch.dusk { background: linear-gradient(135deg, #1d2127 50%, #dcd8cc 50%); }
+  .swatch.moss { background: linear-gradient(135deg, #1b211d 50%, #d3dbc9 50%); }
+  .swatch.parchment { background: linear-gradient(135deg, #f3ebd8 50%, #4b3f2f 50%); }
+  .name { max-width: 14em; overflow: hidden; text-overflow: ellipsis; font-size: .82rem; color: var(--muted); padding-left: 8px; }
+  @media (max-width: 640px) { .name, .sep.opt { display: none; } .status { min-width: 4em; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+  <main class="welcome" id="welcome">
+    <div class="welcome-inner">
+      <div class="glow" aria-hidden="true"></div>
+      <h1>Read PDFs in soft light</h1>
+      <p class="lede">Open a paper and it's redrawn in calm, low-glare colours. Figures keep their colours and text stays selectable.</p>
+      <label class="drop" for="file">
+        <strong>Choose a PDF</strong> or drop it here
+        <small>Works best with papers, reports and books</small>
+      </label>
+      <input type="file" id="file" accept="application/pdf,.pdf" hidden>
+      <p class="privacy">Your file is opened in this browser tab and never uploaded anywhere.</p>
+      <p class="error" id="error" role="alert"></p>
+    </div>
+  </main>
+
+  <section class="reader" id="reader" aria-label="Document"></section>
+
+  <nav class="bar" aria-label="Reading controls">
+    <div class="bar-inner">
+      <span class="name" id="name"></span>
+      <span class="sep opt"></span>
+      <button class="btn" id="zoomOut" aria-label="Zoom out">−</button>
+      <span class="status" id="zoomLabel">100%</span>
+      <button class="btn" id="zoomIn" aria-label="Zoom in">+</button>
+      <span class="sep"></span>
+      <span class="status" id="pageLabel">1 / 1</span>
+      <span class="sep"></span>
+      <button class="swatch dusk" data-theme="dusk" aria-label="Dusk colours" aria-pressed="true"></button>
+      <button class="swatch moss" data-theme="moss" aria-label="Moss colours" aria-pressed="false"></button>
+      <button class="swatch parchment" data-theme="parchment" aria-label="Parchment colours" aria-pressed="false"></button>
+      <span class="sep"></span>
+      <button class="btn" id="openAnother">Open</button>
+    </div>
+  </nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script>
+(() => {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  // Page palettes: [background rgb, text rgb, invert?]
+  const PALETTES = {
+    dusk:      { bg: [38, 43, 51],   fg: [220, 216, 204], invert: true },
+    moss:      { bg: [36, 44, 39],   fg: [211, 219, 201], invert: true },
+    parchment: { bg: [243, 235, 216], fg: [75, 63, 47],   invert: false }
+  };
+
+  const $ = id => document.getElementById(id);
+  const fileInput = $("file"), reader = $("reader"), errorEl = $("error");
+  const store = {
+    get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} }
+  };
+
+  let pdf = null, pages = [], zoom = parseFloat(store.get("lamplight-zoom", "1")) || 1;
+  let theme = store.get("lamplight-theme", "dusk");
+  if (!PALETTES[theme]) theme = "dusk";
+  let generation = 0, observer = null;
+
+  function applyTheme() {
+    document.documentElement.dataset.reading = theme;
+    document.querySelectorAll(".swatch").forEach(s =>
+      s.setAttribute("aria-pressed", String(s.dataset.theme === theme)));
+  }
+  applyTheme();
+
+  // Recolour rendered pixels. Dark themes use a "smart invert":
+  // lightness flips but hues are kept, so chart colours still read correctly.
+  function recolour(ctx, w, h) {
+    const p = PALETTES[theme];
+    const img = ctx.getImageData(0, 0, w, h), d = img.data;
+    const [br, bg, bb] = p.bg, dr = p.fg[0] - br, dg = p.fg[1] - bg, db = p.fg[2] - bb;
+    for (let i = 0; i < d.length; i += 4) {
+      let r = d[i], g = d[i + 1], b = d[i + 2];
+      if (p.invert) {
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), k = 255 - mx - mn;
+        r += k; g += k; b += k;           // lightness inverted, hue preserved
+        d[i] = br + r / 255 * dr; d[i + 1] = bg + g / 255 * dg; d[i + 2] = bb + b / 255 * db;
+      } else {
+        // light theme: white -> paper, black -> ink
+        d[i] = p.fg[0] + r / 255 * (br - p.fg[0]);
+        d[i + 1] = p.fg[1] + g / 255 * (bg - p.fg[1]);
+        d[i + 2] = p.fg[2] + b / 255 * (bb - p.fg[2]);
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  function baseScale(page) {
+    const vp = page.getViewport({ scale: 1 });
+    const avail = Math.min(reader.clientWidth - 24, 900);
+    return Math.max(avail / vp.width, 0.3);
+  }
+
+  async function renderPage(entry) {
+    const gen = generation;
+    entry.rendered = true;
+    const { page, el } = entry;
+    const scale = baseScale(page) * zoom;
+    const vp = page.getViewport({ scale });
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.floor(vp.width * dpr);
+    canvas.height = Math.floor(vp.height * dpr);
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    try {
+      await page.render({ canvasContext: ctx, viewport: vp, transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null }).promise;
+    } catch { entry.rendered = false; return; }
+    if (gen !== generation) return;
+    recolour(ctx, canvas.width, canvas.height);
+
+    const text = document.createElement("div");
+    text.className = "textLayer";
+    text.style.setProperty("--scale-factor", scale);
+    const content = await page.getTextContent();
+    if (gen !== generation) return;
+    await pdfjsLib.renderTextLayer({ textContentSource: content, container: text, viewport: vp, textDivs: [] }).promise;
+    if (gen !== generation) return;
+
+    el.querySelectorAll("canvas, .textLayer").forEach(n => n.remove());
+    el.prepend(text);
+    el.prepend(canvas);
+  }
+
+  function layout() {
+    generation++;
+    if (observer) observer.disconnect();
+    observer = new IntersectionObserver(items => {
+      for (const it of items) {
+        const entry = pages[+it.target.dataset.index];
+        if (it.isIntersecting && !entry.rendered) renderPage(entry);
+      }
+    }, { rootMargin: "900px 0px" });
+
+    for (const entry of pages) {
+      const vp = entry.page.getViewport({ scale: baseScale(entry.page) * zoom });
+      entry.el.style.width = vp.width + "px";
+      entry.el.style.aspectRatio = `${vp.width} / ${vp.height}`;
+      entry.rendered = false;
+      observer.observe(entry.el);
+    }
+    $("zoomLabel").textContent = Math.round(zoom * 100) + "%";
+  }
+
+  async function openFile(file) {
+    errorEl.textContent = "";
+    if (!file) return;
+    if (file.type !== "application/pdf" && !/\.pdf$/i.test(file.name)) {
+      errorEl.textContent = "That file isn't a PDF. Choose a file ending in .pdf.";
+      return;
+    }
+    try {
+      const data = new Uint8Array(await file.arrayBuffer());
+      const doc = await pdfjsLib.getDocument({ data }).promise;
+      if (pdf) pdf.destroy();
+      pdf = doc;
+    } catch (e) {
+      errorEl.textContent = e && e.name === "PasswordException"
+        ? "This PDF is password-protected. Remove the password and try again."
+        : "This PDF couldn't be opened. It may be damaged; try another copy.";
+      return;
+    }
+    reader.innerHTML = "";
+    pages = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const el = document.createElement("div");
+      el.className = "page";
+      el.dataset.index = i - 1;
+      el.innerHTML = `<span class="num">${i}</span>`;
+      reader.appendChild(el);
+      pages.push({ page, el, rendered: false });
+    }
+    $("name").textContent = file.name.replace(/\.pdf$/i, "");
+    document.title = file.name + " – Lamplight";
+    document.body.classList.add("reading");
+    window.scrollTo(0, 0);
+    layout();
+    updatePageLabel();
+  }
+
+  function rerenderAll() {
+    const anchor = currentPage();
+    layout();
+    pages[anchor]?.el.scrollIntoView({ block: "start" });
+  }
+
+  function currentPage() {
+    const mid = window.innerHeight / 3;
+    let idx = 0;
+    pages.forEach((p, i) => { if (p.el.getBoundingClientRect().top < mid) idx = i; });
+    return idx;
+  }
+  function updatePageLabel() {
+    if (pages.length) $("pageLabel").textContent = `${currentPage() + 1} / ${pages.length}`;
+  }
+
+  function setZoom(z) {
+    zoom = Math.min(3, Math.max(0.5, Math.round(z * 10) / 10));
+    store.set("lamplight-zoom", zoom);
+    rerenderAll();
+  }
+
+  // Events
+  fileInput.addEventListener("change", () => { openFile(fileInput.files[0]); fileInput.value = ""; });
+  $("openAnother").addEventListener("click", () => fileInput.click());
+  $("zoomIn").addEventListener("click", () => setZoom(zoom + 0.1));
+  $("zoomOut").addEventListener("click", () => setZoom(zoom - 0.1));
+  document.querySelectorAll(".swatch").forEach(s => s.addEventListener("click", () => {
+    theme = s.dataset.theme; store.set("lamplight-theme", theme);
+    applyTheme(); rerenderAll();
+  }));
+  window.addEventListener("scroll", () => requestAnimationFrame(updatePageLabel), { passive: true });
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => pages.length && rerenderAll(), 250);
+  });
+  window.addEventListener("keydown", e => {
+    if (!pages.length || e.target.closest("input")) return;
+    if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+")) { e.preventDefault(); setZoom(zoom + 0.1); }
+    if ((e.ctrlKey || e.metaKey) && e.key === "-") { e.preventDefault(); setZoom(zoom - 0.1); }
+  });
+
+  ["dragenter", "dragover"].forEach(t => window.addEventListener(t, e => {
+    e.preventDefault(); document.body.classList.add("dragging");
+  }));
+  ["dragleave", "drop"].forEach(t => window.addEventListener(t, e => {
+    e.preventDefault();
+    if (t === "drop" || e.relatedTarget === null) document.body.classList.remove("dragging");
+  }));
+  window.addEventListener("drop", e => openFile(e.dataTransfer.files[0]));
+})();
+</script>
+</body>
+</html>
