@@ -31,7 +31,7 @@ Reading white-background PDFs on a screen — in a viewer, in VS Code, anywhere 
 
 ## How to use
 
-**Online:** visit `https://<username>.github.io/<repo>/`
+**Online:** <https://vasu021.github.io/Lamplight/>
 
 **Locally:** download `index.html` and open it in your browser. That's the whole install — there is nothing to build and nothing to `npm install`.
 
@@ -89,7 +89,7 @@ GitHub Pages will serve this repo as-is:
 2. Under **Build and deployment**, set **Source** to *Deploy from a branch*
 3. Choose the `main` branch and the `/ (root)` folder, then **Save**
 
-Your copy appears at `https://<username>.github.io/<repo>/` within a minute or two.
+Your copy appears at `https://<username>.github.io/<repo>/` within a minute or two — for this repo, <https://vasu021.github.io/Lamplight/>.
 
 ## License
 

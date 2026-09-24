@@ -5,7 +5,7 @@ Thanks for taking a look. Lamplight is small and means to stay that way, so cont
 ## Getting set up
 
 ```
-git clone https://github.com/<username>/<repo>.git
+git clone https://github.com/Vasu021/Lamplight.git
 ```
 
 Open `index.html` in a browser. That's it — there is no build step and nothing to install.
