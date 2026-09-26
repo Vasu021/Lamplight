@@ -42,7 +42,7 @@ Reading white-background PDFs on a screen — in a viewer, in VS Code, anywhere 
 
 ## How to use
 
-**Online:** <https://vasu021.github.io/Lamplight/>
+**Online:** <https://lamplight.ink/> — also reachable at <https://vasu021.github.io/Lamplight/>, which redirects there.
 
 **Locally:** download `index.html` and open it in your browser. That's the whole install — there is nothing to build and nothing to `npm install`.
 
@@ -125,7 +125,9 @@ GitHub Pages will serve this repo as-is:
 2. Under **Build and deployment**, set **Source** to *Deploy from a branch*
 3. Choose the `main` branch and the `/ (root)` folder, then **Save**
 
-Your copy appears at `https://<username>.github.io/<repo>/` within a minute or two — for this repo, <https://vasu021.github.io/Lamplight/>.
+Your copy appears at `https://<username>.github.io/<repo>/` within a minute or two.
+
+This repo is served from a custom domain instead — <https://lamplight.ink/> — which is what the `CNAME` file does. Its Pages address, <https://vasu021.github.io/Lamplight/>, stays live and redirects there. Delete `CNAME` in your fork, or Pages will try to serve your copy at a domain you don't own.
 
 ## License
 
