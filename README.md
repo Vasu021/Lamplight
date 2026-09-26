@@ -117,18 +117,6 @@ The shelf keeps its copies in **IndexedDB**, which is browser storage on your ow
 
 Ideas, bug reports and small patches are all welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Deploying your own copy
-
-GitHub Pages will serve this repo as-is:
-
-1. **Settings → Pages**
-2. Under **Build and deployment**, set **Source** to *Deploy from a branch*
-3. Choose the `main` branch and the `/ (root)` folder, then **Save**
-
-Your copy appears at `https://<username>.github.io/<repo>/` within a minute or two.
-
-This repo is served from a custom domain instead — <https://lamplight.ink/> — which is what the `CNAME` file does. Its Pages address, <https://vasu021.github.io/Lamplight/>, stays live and redirects there. Delete `CNAME` in your fork, or Pages will try to serve your copy at a domain you don't own.
-
 ## License
 
 [MIT](LICENSE).
